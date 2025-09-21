@@ -10,7 +10,7 @@ ifeq '$(IP)' ''
 endif
 #-------------------------------Project Files and Dirs-----------------------------------------------------
 
-TARGET=$(PROJ_NAME)
+TARGET=lib$(PROJ_NAME)
 ASM=./asm
 SRC=./src
 IWRAM_SRC=./iwsrc
@@ -117,6 +117,7 @@ clean: $(BIN)
 	@rm -fv $(BIN)/*.elf
 	@rm -fv $(BIN)/*.o
 	@rm -fv $(BIN)/*.gba
+	@rm -fv $(BIN)/*.a
 
 clean_saves: $(BIN)
 	@rm -fv $(BIN)/*.sav

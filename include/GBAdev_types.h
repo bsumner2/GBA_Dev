@@ -19,8 +19,10 @@ typedef char                    i8;
 typedef short int               i16;
 typedef long int                i32;
 typedef long long int           i64;
-typedef _Bool BOOL;
 
+typedef _Bool                   BOOL;
+
+typedef unsigned long int       WORD;
 
 typedef void (*IRQ_Callback_t)(void);
 typedef enum e_irq_index {
@@ -59,6 +61,11 @@ typedef struct s_dpy_cnt_fields {
   BOOL win_obj_enable : 1;
 } ALIGN(2) PACKED Dpy_Cnt_Fields_t;
 
+typedef union u_dpy_cnt {
+  Dpy_Cnt_Fields_t fields;
+  u16 raw;
+} Dpy_Cnt_t;
+
 typedef struct s_dpy_stat_fields {
   BOOL in_vblank : 1;
   BOOL in_hblank : 1;
@@ -68,6 +75,11 @@ typedef struct s_dpy_stat_fields {
   BOOL vcount_irq_enable : 1;
   u32 vcount_trigger_val : 8;
 } ALIGN(2) PACKED Dpy_Stat_Fields_t;
+
+typedef union u_dpy_stat {
+  Dpy_Stat_Fields_t fields;
+  u16 raw;
+} Dpy_Status_t;
 
 typedef struct s_key_stat_fields {
   BOOL A : 1;
@@ -83,6 +95,11 @@ typedef struct s_key_stat_fields {
   u32 IGNORE_PAD0 : 6;
 } ALIGN(2) PACKED Key_Stat_Fields_t;
 
+typedef union u_key_stat {
+  Key_Stat_Fields_t fields;
+  u16 raw;
+} Key_Stat_t;
+
 typedef struct s_tm_cnt_fields {
   u32 freq:2;
   BOOL cascade_mode:1;
@@ -90,7 +107,12 @@ typedef struct s_tm_cnt_fields {
   BOOL interrupt_upon_completion:1;
   BOOL enable:1;
   BOOL IGNORE_PAD1;
-} ALIGN(2) PACKED Timer_CNT_Fields_t;
+} ALIGN(2) PACKED Timer_Cnt_Fields_t;
+
+typedef union u_tm_cnt {
+  Timer_Cnt_Fields_t fields;
+  u16 raw;
+} Timer_Cnt_t;
 
 typedef struct s_dma_cnt_fields {
   u32 ntransfers : 16;
@@ -103,7 +125,7 @@ typedef struct s_dma_cnt_fields {
   u32 timing_mode : 2;
   BOOL interrupt_upon_completion : 1;
   BOOL enable : 1;
-} ALIGN(2) PACKED DMA_CNT_Fields_t;
+} ALIGN(4) PACKED DMA_Cnt_Fields_t;
 
 typedef struct s_ieif_fields {
   BOOL vblank : 1;
@@ -117,16 +139,20 @@ typedef struct s_ieif_fields {
   u32 IGNORE_PAD0 : 2;
 } ALIGN(2) PACKED IE_Fields_t, IF_Fields_t;
 
+typedef union u_dma_cnt { 
+  u32 raw; 
+  DMA_Cnt_Fields_t fields;
+} DMA_Cnt_t;
  
 typedef struct s_dma_handle {
   const void *src;
   void *dst;
-  union { u32 raw; DMA_CNT_Fields_t fields; } cnt_reg;
+  DMA_Cnt_t cnt_reg;
 } DMA_Handle_t;
 
 typedef struct s_tm_handle {
   u16 data;
-  union { u16 raw; Timer_CNT_Fields_t fields; } cnt_reg;
+  Timer_Cnt_t cnt_reg;
 } Timer_Handle_t;
 
 typedef union u_obj_attr0 {
@@ -218,7 +244,19 @@ typedef struct s_spr_tile_8bpp {
 typedef Tile4_t Tile4_Block_t[512];
 typedef Tile8_t Tile8_Block_t[256];
 
+typedef struct bg_screen_entry_fields {
+  u32 tile_idx : 10;
+  BOOL hflip : 1;
+  BOOL vflip : 1;
+  u32 pal4_bank : 4;
+  
+}BG_ScreenEntry_Fields_t;
 
+typedef union u_bg_screen_entry {
+  BG_ScreenEntry_Fields_t fields;
+  u16 raw;
+} BG_ScreenEntry_t;
+typedef BG_ScreenEntry_t Screenblock_t[1024];
 
 #ifdef __cplusplus
 }

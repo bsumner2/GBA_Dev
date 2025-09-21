@@ -15,9 +15,9 @@ extern "C" {
 #define REG_IFBIOS                REG(u16, MEM_IO - 0x0008)
 #define REG_ISR_MAIN              (*((void (**)(void))(MEM_IO - 0x0004)))
 
-#define REG_DPY_CNT	              REG(u32, MEM_IO)
-#define REG_DPY_STAT	            REG(u16, MEM_IO + 0x0004)
-#define REG_DPY_VCOUNT	          REG(u16, MEM_IO + 0x0006)
+#define REG_DPY_CNT               REG(u32, MEM_IO)
+#define REG_DPY_STAT              REG(u16, MEM_IO + 0x0004)
+#define REG_DPY_VCOUNT            REG(u16, MEM_IO + 0x0006)
 
 #define REG_BG0_CNT               REG(u16, MEM_IO + 0x0008)
 #define REG_BG1_CNT               REG(u16, MEM_IO + 0x000A)
@@ -79,21 +79,21 @@ extern "C" {
 #define REG_SND4_CNT              REG(u16, MEM_IO + 0x0078)
 #define REG_SND4_FREQ             REG(u16, MEM_IO + 0x007C)
 
-#define REG_SND_CNT			          REG(u32, MEM_IO + 0x0080)
-#define REG_SND_DMG_CNT		        REG(u16, MEM_IO + 0x0080)
-#define REG_SND_DSOUND_CNT 	 	    REG(u16, MEM_IO + 0x0082)
-#define REG_SND_STAT			        REG(u16, MEM_IO + 0x0084)
-#define REG_SND_BIAS			        REG(u16, MEM_IO + 0x0088)
+#define REG_SND_CNT               REG(u32, MEM_IO + 0x0080)
+#define REG_SND_DMG_CNT           REG(u16, MEM_IO + 0x0080)
+#define REG_SND_DSOUND_CNT        REG(u16, MEM_IO + 0x0082)
+#define REG_SND_STAT              REG(u16, MEM_IO + 0x0084)
+#define REG_SND_BIAS              REG(u16, MEM_IO + 0x0088)
 
-#define REG_WAVE_RAM		          ((volatile u32*) (MEM_IO + 0x0090))
+#define REG_WAVE_RAM              ((volatile u32*) (MEM_IO + 0x0090))
 
-#define REG_WAVE_RAM0			 	 	    REG(u32, MEM_IO + 0x0090)
-#define REG_WAVE_RAM1			 	 	    REG(u32, MEM_IO + 0x0094)
-#define REG_WAVE_RAM2			 	 	    REG(u32, MEM_IO + 0x0098)
-#define REG_WAVE_RAM3			 	 	    REG(u32, MEM_IO + 0x009C)
+#define REG_WAVE_RAM0             REG(u32, MEM_IO + 0x0090)
+#define REG_WAVE_RAM1             REG(u32, MEM_IO + 0x0094)
+#define REG_WAVE_RAM2             REG(u32, MEM_IO + 0x0098)
+#define REG_WAVE_RAM3             REG(u32, MEM_IO + 0x009C)
 
-#define REG_FIFO_A				 	 	    REG(u32, MEM_IO + 0x00A0)
-#define REG_FIFO_B				 	 	    REG(u32, MEM_IO + 0x00A4)
+#define REG_FIFO_A                REG(u32, MEM_IO + 0x00A0)
+#define REG_FIFO_B                REG(u32, MEM_IO + 0x00A4)
 
 #define REG_DMA                   ((volatile DMA_Handle_t*) (MEM_IO + 0x00B0))
 

@@ -9,6 +9,11 @@
 extern "C" {
 #endif  /* C++ Name mangler guard */
 
+#ifdef __thumb__
+#define SUPERVISOR_CALL(idx) __asm volatile ("SVC\t" #idx ::: "r0", "r1", "r2", "r3")
+#else
+#define SUPERVISOR_CALL(idx) __asm volatile ("SVC\t" #idx "<<16" ::: "r0", "r1", "r2", "r3")
+#endif
 EWRAM_CODE BOOL SRAM_Write(const void *src, u32 size, u32 offset);
 EWRAM_CODE BOOL SRAM_Read(void *dst, u32 size, u32 offset);
 
@@ -27,6 +32,7 @@ BOOL Obj_Affine_Transform_Copy(Obj_Affine_Transform_t *dst,
  * */
 IWRAM_CODE void ISR_Handler_Basic(void);
 
+
 /**
  * @brief Offers the most complex of the three options. This ISR callback will
  * acknowledge the interrupt, and will call whichever callback function has been
@@ -38,20 +44,13 @@ IWRAM_CODE void ISR_Handler_Nested_Switchboard(void);
 
 IWRAM_CODE void ISR_Handler_Switchboard(void);
 
-void IRQ_Add_Callback(void (*)(void))
+void IRQ_Add_Callback(void (*)(void));
 
 INLN void OAM_Copy(Obj_Attr_t *dst, const Obj_Attr_t *src, u32 count);
 
 
-INLN void IRQ_Vsync(void);
-
-
 INLN void OAM_Copy(Obj_Attr_t *dst, const Obj_Attr_t *src, u32 count) {
   Fast_Memcpy32(dst, src, count<<1);
-}
-
-__attribute__ ((naked)) INLN void IRQ_Vsync(void) {
-  __asm volatile ("SVC 0x05");
 }
 
 

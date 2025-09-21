@@ -33,6 +33,9 @@ extern "C" {
 #define BMP_PAGE_SIZE               0x0A000
 
 /* GBA BMP mode screen buffer dims */
+#define SCREEN_HEIGHT               160
+#define SCREEN_WIDTH                240
+
 #define M3_SCREEN_HEIGHT            160
 #define M3_SCREEN_WIDTH             240
 
@@ -92,12 +95,17 @@ extern "C" {
 #define DPY_STAT_VCOUNT_IRQ_FLAGBIT   0x0020
 #define DPY_STAT_VCOUNT_MASK          0xFF00
 
+#define TILE8_DIMS                    8
+
 #define DPY_CNT_MODE_SHAMT            0
 #define DPY_STAT_VCOUNT_SHAMT         8
 
 #define REG_FLAG(regname, flagname) \
   (regname##_##flagname##_FLAGBIT)
 #define REG_VALUE(regname, flagname, value) ((value&regname##_##flagname##_MASK)<<regname##_##flagname##_SHAMT)
+
+#define TRUE 1U
+#define FALSE 0U
 
 #define DPY_CNT_MODE_MODE3 REG_VALUE(DPY_CNT, MODE, 3)
 

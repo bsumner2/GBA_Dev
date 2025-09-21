@@ -90,7 +90,7 @@ ISR_Handler_Switchboard_Nested:
     /* Set current mode to SYS mode */
     MRS r3, cpsr
     BIC r3, r3, #0xDF
-    ORR r3, r3, 0x1F
+    ORR r3, r3, #0x1F
     MSR cpsr, r3
     /* Call ISR */
     STMFD sp!, { r0, lr }

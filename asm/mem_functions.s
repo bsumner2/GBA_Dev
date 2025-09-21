@@ -201,12 +201,10 @@ OAM_Init32_Local:
         BCS .LOAM_init32_local_loop
     LDMFD sp!, { r4-r9 }
     BX lr
-
-        
     .size OAM_Init32_Local, .-OAM_Init32_Local
 
 
-    .section text
+    .section .text
     .thumb_func
     .align 2
     .global OAM_Init
@@ -220,7 +218,7 @@ OAM_Init32_Local:
 OAM_Init:
     MOV r2, #3
     TST r1, r2
-    BEQ .LOAM_init_bad_return
+    BNE .LOAM_init_bad_return
     CMP r1, #0
     BLE .LOAM_init_bad_return
     CMP r1, #128
