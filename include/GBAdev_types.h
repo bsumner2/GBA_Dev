@@ -244,6 +244,20 @@ typedef struct s_spr_tile_8bpp {
 typedef Tile4_t Tile4_Block_t[512];
 typedef Tile8_t Tile8_Block_t[256];
 
+typedef struct s_bg_affine__transform {
+  i16 pa, pb;
+  i16 pc, pd;
+  i16 dx, dy;
+} ALIGN(4) BG_Affine_Transform_t;
+
+typedef struct s_signed_coord {
+  i16 x, y;
+} ALIGN(4) Coord_t;
+
+typedef struct s_unsigned_coord {
+  u16 x, y;
+} ALIGN(4) UCoord_t;
+
 typedef struct bg_screen_entry_fields {
   u32 tile_idx : 10;
   BOOL hflip : 1;
@@ -256,8 +270,8 @@ typedef union u_bg_screen_entry {
   BG_ScreenEntry_Fields_t fields;
   u16 raw;
 } BG_ScreenEntry_t;
-typedef BG_ScreenEntry_t Screenblock_t[1024];
 
+typedef u16 ScreenBlock_t[1024];
 #ifdef __cplusplus
 }
 #endif  /* C++ Name mangler guard */

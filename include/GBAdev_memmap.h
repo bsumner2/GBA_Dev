@@ -24,6 +24,8 @@ extern "C" {
 #define REG_BG2_CNT               REG(u16, MEM_IO + 0x000C)
 #define REG_BG3_CNT               REG(u16, MEM_IO + 0x000E)
 
+#define REG_BG_OFS                ((Coord_t*) (MEM_IO + 0x0010))
+
 #define REG_BG0_HOFS              REG(u16, MEM_IO + 0x0010)
 #define REG_BG0_VOFS              REG(u16, MEM_IO + 0x0012)
 
@@ -36,19 +38,21 @@ extern "C" {
 #define REG_BG3_HOFS              REG(u16, MEM_IO + 0x001C)
 #define REG_BG3_VOFS              REG(u16, MEM_IO + 0x001E)
 
+#define REG_BG_AFFINE             ((BG_Affine_Transform_t*) (MEM_IO+0x0020))
+
 #define REG_BG2_PA                REG(u16, MEM_IO + 0x0020)
 #define REG_BG2_PB                REG(u16, MEM_IO + 0x0022)
 #define REG_BG2_PC                REG(u16, MEM_IO + 0x0024)
 #define REG_BG2_PD                REG(u16, MEM_IO + 0x0026)
-#define REG_BG2_X                 REG(u32, MEM_IO + 0x0028)
-#define REG_BG2_Y                 REG(u32, MEM_IO + 0x002C)
+#define REG_BG2_DX                REG(u32, MEM_IO + 0x0028)
+#define REG_BG2_DY                REG(u32, MEM_IO + 0x002C)
 
 #define REG_BG3_PA                REG(u16, MEM_IO + 0x0030)
 #define REG_BG3_PB                REG(u16, MEM_IO + 0x0032)
 #define REG_BG3_PC                REG(u16, MEM_IO + 0x0034)
 #define REG_BG3_PD                REG(u16, MEM_IO + 0x0036)
-#define REG_BG3_X                 REG(u32, MEM_IO + 0x0038)
-#define REG_BG3_Y                 REG(u32, MEM_IO + 0x003C)
+#define REG_BG3_DX                REG(u32, MEM_IO + 0x0038)
+#define REG_BG3_DY                REG(u32, MEM_IO + 0x003C)
 
 #define REG_WIN0_HDIMS            REG(u16, MEM_IO + 0x0040)
 #define REG_WIN1_HDIMS            REG(u16, MEM_IO + 0x0042)
@@ -155,6 +159,7 @@ extern "C" {
 #define PAL_MEM_BG                ((u16*) (MEM_PAL))
 #define PAL_MEM_OBJ               ((u16*) (MEM_PAL + PAL_BG_SIZE))
 
+#define SCR_ENT_MEM               ((ScreenBlock_t*) (MEM_VRAM))
 
 #ifdef __cplusplus
 }
