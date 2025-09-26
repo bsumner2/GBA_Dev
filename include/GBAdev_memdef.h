@@ -139,6 +139,11 @@ extern "C" {
 #define BLEND_FADE_TOP_BLEND_FADE_MASK         0x001F
 #define BLEND_FADE_TOP_BLEND_FADE_SHAMT        0
 
+#define BLEND_MODE_OFF      0
+#define BLEND_MODE_ALPHA    1
+#define BLEND_MODE_WHITE    2
+#define BLEND_MODE_BLACK    3
+
 #define TILE_DIMS                     8
 #define TILE4_DIMS                    8
 #define TILE8_DIMS                    8

@@ -24,6 +24,8 @@ typedef _Bool                   BOOL;
 
 typedef unsigned long int       WORD;
 
+typedef unsigned long int       UIPTR_T;
+
 typedef void (*IRQ_Callback_t)(void);
 typedef enum e_irq_index {
   IRQ_VBLANK=0,
