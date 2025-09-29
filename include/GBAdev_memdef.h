@@ -70,6 +70,20 @@ extern "C" {
 #define KEY_R                       KEY_STAT_R_FLAGBIT
 #define KEY_L                       KEY_STAT_L_FLAGBIT
 
+/* REG_KEY_CNT */
+#define KEY_CNT_A_FLAGBIT           KEY_STAT_A_FLAGBIT
+#define KEY_CNT_B_FLAGBIT           KEY_STAT_B_FLAGBIT
+#define KEY_CNT_SEL_FLAGBIT         KEY_STAT_SEL_FLAGBIT
+#define KEY_CNT_START_FLAGBIT       KEY_STAT_START_FLAGBIT
+#define KEY_CNT_RIGHT_FLAGBIT       KEY_STAT_RIGHT_FLAGBIT
+#define KEY_CNT_LEFT_FLAGBIT        KEY_STAT_LEFT_FLAGBIT
+#define KEY_CNT_UP_FLAGBIT          KEY_STAT_UP_FLAGBIT
+#define KEY_CNT_DOWN_FLAGBIT        KEY_STAT_DOWN_FLAGBIT
+#define KEY_CNT_R_FLAGBIT           KEY_STAT_R_FLAGBIT
+#define KEY_CNT_L_FLAGBIT           KEY_STAT_L_FLAGBIT
+#define KEY_CNT_IRQ_FLAGBIT         0x4000
+#define KEY_CNT_BWISE_AND_FLAGBIT   0x8000
+
 /* Display control reg bitfield flags and masks */
 #define DPY_CNT_MODE_MASK           0x0007
 #define DPY_CNT_GB_FLAGBIT          0x0008
@@ -98,6 +112,7 @@ extern "C" {
 #define DPY_STAT_VCOUNT_IRQ_FLAGBIT   0x0020
 #define DPY_STAT_VCOUNT_MASK          0xFF00
 
+/* Background control reg fields */
 #define BG_CNT_PRIORITY_MASK          0x0003
 #define BG_CNT_TILE_BLOCK_BASE_MASK   0x000C
 #define BG_CNT_MOSAIC_FLAGBIT         0x0040
@@ -111,6 +126,7 @@ extern "C" {
 #define BG_CNT_SCR_BLOCK_BASE_SHAMT   8
 #define BG_CNT_BG_SIZE_SHAMT          14
 
+/* BLEND control and param registers */
 #define BLEND_CNT_LAYER_A_BG0_FLAGBIT       0x0001
 #define BLEND_CNT_LAYER_A_BG1_FLAGBIT       0x0002
 #define BLEND_CNT_LAYER_A_BG2_FLAGBIT       0x0004
@@ -125,6 +141,7 @@ extern "C" {
 #define BLEND_CNT_LAYER_B_OBJ_FLAGBIT       0x1000
 #define BLEND_CNT_LAYER_B_BACKDROP_FLAGBIT  0x2000
 
+/* BLEND control and param registers' fields */
 #define BLEND_CNT_BLEND_MODE_SHAMT          6
 
 #define BLEND_ALPHA_LAYER_A_WEIGHT_MASK     0x001F
@@ -144,6 +161,7 @@ extern "C" {
 #define BLEND_MODE_WHITE    2
 #define BLEND_MODE_BLACK    3
 
+/* Sprite and BG tile block dims */
 #define TILE_DIMS                     8
 #define TILE4_DIMS                    8
 #define TILE8_DIMS                    8
@@ -151,7 +169,8 @@ extern "C" {
 #define REG_FLAG(regname, flagname) \
   (regname##_##flagname##_FLAGBIT)
 #define REG_VALUE(regname, flagname, value) ((value<<regname##_##flagname##_SHAMT)&regname##_##flagname##_MASK)
-
+/* Use these if you want more descriptive indicators when setting values in
+ * one of the register bitfield struct bool type, 1b, fields. */
 #define TRUE 1U
 #define FALSE 0U
 
