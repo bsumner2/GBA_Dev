@@ -45,44 +45,36 @@ extern "C" {
 #define M5_SCREEN_HEIGHT            128
 #define M5_SCREEN_WIDTH             160
 
-/* REG_KEY_STAT flagbits */
-#define KEY_STAT_A_FLAGBIT          0x0001
-#define KEY_STAT_B_FLAGBIT          0x0002
-#define KEY_STAT_SEL_FLAGBIT        0x0004
-#define KEY_STAT_START_FLAGBIT      0x0008
-#define KEY_STAT_RIGHT_FLAGBIT      0x0010
-#define KEY_STAT_LEFT_FLAGBIT       0x0020
-#define KEY_STAT_UP_FLAGBIT         0x0040
-#define KEY_STAT_DOWN_FLAGBIT       0x0080
-#define KEY_STAT_R_FLAGBIT          0x0100
-#define KEY_STAT_L_FLAGBIT          0x0200
-#define KEY_STAT_KEYS_MASK          0x03FF
+/* REG_KEY_STAT */
+#define KEY_STAT_KEYFLAGS_MASK      0x03FF
+#define KEY_STAT_KEYFLAGS_SHAMT     0
 
-/* Alternative names for keypad status bits */
-#define KEY_A                       KEY_STAT_A_FLAGBIT
-#define KEY_B                       KEY_STAT_B_FLAGBIT
-#define KEY_SEL                     KEY_STAT_SEL_FLAGBIT
-#define KEY_START                   KEY_STAT_START_FLAGBIT
-#define KEY_RIGHT                   KEY_STAT_RIGHT_FLAGBIT
-#define KEY_LEFT                    KEY_STAT_LEFT_FLAGBIT
-#define KEY_UP                      KEY_STAT_UP_FLAGBIT
-#define KEY_DOWN                    KEY_STAT_DOWN_FLAGBIT
-#define KEY_R                       KEY_STAT_R_FLAGBIT
-#define KEY_L                       KEY_STAT_L_FLAGBIT
+/* Key flags */
+#define KEY_A                       0x0001
+#define KEY_B                       0x0002
+#define KEY_SEL                     0x0004
+#define KEY_START                   0x0008
+#define KEY_RIGHT                   0x0010
+#define KEY_LEFT                    0x0020
+#define KEY_UP                      0x0040
+#define KEY_DOWN                    0x0080
+#define KEY_R                       0x0100
+#define KEY_L                       0x0200
+#define KEY_AB                      0x0003
+#define KEY_STARTSEL                0x000C
+#define KEY_DPAD_HORIZONTAL         0x0030
+#define KEY_DPAD_VERTICAL           0x00C0
+#define KEY_DPAD                    0x00F0
+#define KEY_BUMPERS                 0x0300
+#define KEY_ANY                     0x03FF
+#define KEY_ALL                     0x03FF
 
 /* REG_KEY_CNT */
-#define KEY_CNT_A_FLAGBIT           KEY_STAT_A_FLAGBIT
-#define KEY_CNT_B_FLAGBIT           KEY_STAT_B_FLAGBIT
-#define KEY_CNT_SEL_FLAGBIT         KEY_STAT_SEL_FLAGBIT
-#define KEY_CNT_START_FLAGBIT       KEY_STAT_START_FLAGBIT
-#define KEY_CNT_RIGHT_FLAGBIT       KEY_STAT_RIGHT_FLAGBIT
-#define KEY_CNT_LEFT_FLAGBIT        KEY_STAT_LEFT_FLAGBIT
-#define KEY_CNT_UP_FLAGBIT          KEY_STAT_UP_FLAGBIT
-#define KEY_CNT_DOWN_FLAGBIT        KEY_STAT_DOWN_FLAGBIT
-#define KEY_CNT_R_FLAGBIT           KEY_STAT_R_FLAGBIT
-#define KEY_CNT_L_FLAGBIT           KEY_STAT_L_FLAGBIT
+#define KEY_CNT_KEYFLAGS_MASK       0x03FF
 #define KEY_CNT_IRQ_FLAGBIT         0x4000
 #define KEY_CNT_BWISE_AND_FLAGBIT   0x8000
+
+#define KEY_CNT_KEYFLAGS_SHAMT      0
 
 /* Display control reg bitfield flags and masks */
 #define DPY_CNT_MODE_MASK           0x0007
@@ -165,10 +157,35 @@ extern "C" {
 #define TILE_DIMS                     8
 #define TILE4_DIMS                    8
 #define TILE8_DIMS                    8
+#if __STDC_VERSION__==202311L
+#define REG_FLAGS(regname, flagname0, ...)  \
+  (regname##_##flagname0##_FLAGBIT __VA_OPT__ (  \
+    | __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__REGFLAGS_VA_FOLD(regname,  \
+        __VA_ARGS__))))
 
-#define REG_FLAG(regname, flagname) \
-  (regname##_##flagname##_FLAGBIT)
-#define REG_VALUE(regname, flagname, value) ((value<<regname##_##flagname##_SHAMT)&regname##_##flagname##_MASK)
+#define REG_VALUES(regname, fieldname0, value0, ...)  \
+  ((regname##_##fieldname0##_MASK&((value0)<<regname##_##fieldname0##_SHAMT))  \
+   __VA_OPT__ (| __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__REGVALUES_VA_FOLD(  \
+         regname, __VA_ARGS__))))
+
+#define IRQ_FLAGS(irq0, ...)  \
+  (IRQ_##irq0  \
+   __VA_OPT__(| __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__IRQFLAGS_VA_FOLD(  \
+         __VA_ARGS__))))
+
+#define KEY_FLAGS(key0, ...) \
+  (KEY_##key0  \
+   __VA_OPT__(| __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__KEYFLAGS_VA_FOLD(  \
+         __VA_ARGS__))))
+#else
+#define REG_FLAG(regname, flagname) (regname##_##flagname##_FLAGBIT)
+#define REG_VALUE(regname, fieldname, value)  \
+  (regname##_##fieldname##_MASK&((value)<<regname##_##fieldname##_SHAMT))
+/* KEY_FLAGS and IRQ_FLAGS don't have non-variadic counterparts because typing 
+ * the base case is so trivial, it's easier to just type KEY_A instead of 
+ * KEY_FLAG(A), for instance */
+#endif  /* Variadic version of bitfield flagbit and value constructors only 
+         * available with c23 */
 /* Use these if you want more descriptive indicators when setting values in
  * one of the register bitfield struct bool type, 1b, fields. */
 #define TRUE 1U
@@ -182,20 +199,20 @@ extern "C" {
 #define OBJ_SHAPE_WIDE              1
 #define OBJ_SHAPE_TALL              2
 
-#define OBJ_SHAPE_8x8               0
-#define OBJ_SHAPE_16x16             1
-#define OBJ_SHAPE_32x32             2
-#define OBJ_SHAPE_64x64             3
+#define OBJ_SIZE_SQUARE_8x8         0
+#define OBJ_SIZE_SQUARE_16x16       1
+#define OBJ_SIZE_SQUARE_32x32       2
+#define OBJ_SIZE_SQUARE_64x64       3
 
-#define OBJ_SHAPE_16x8              0
-#define OBJ_SHAPE_32x8              1
-#define OBJ_SHAPE_32x16             2
-#define OBJ_SHAPE_64x32             3
+#define OBJ_SIZE_WIDE_16x8          0
+#define OBJ_SIZE_WIDE_32x8          1
+#define OBJ_SIZE_WIDE_32x16         2
+#define OBJ_SIZE_WIDE_64x32         3
 
-#define OBJ_SHAPE_8x16              0
-#define OBJ_SHAPE_8x32              1
-#define OBJ_SHAPE_16x32             2
-#define OBJ_SHAPE_32x64             3
+#define OBJ_SIZE_TALL_8x16          0
+#define OBJ_SIZE_TALL_8x32          1
+#define OBJ_SIZE_TALL_16x32         2
+#define OBJ_SIZE_TALL_32x64         3
 
 #define BG_REGULAR_32x32_BLOCKS     0
 #define BG_REGULAR_64x32_BLOCKS     1
@@ -207,7 +224,48 @@ extern "C" {
 #define BG_AFFINE_64x64_BLOCKS      2
 #define BG_AFFINE_128x128_BLOCKS    3
 
+#define TIMER_FREQ_1HZ              0
+#define TIMER_FREQ_64HZ             1
+#define TIMER_FREQ_256HZ            2
+#define TIMER_FREQ_1024HZ           3
 
+
+// Ignore this stuff. It's all just helpers so the variadic macros actually
+// work
+#if __STDC_VERSION__==202311L
+#define __GBADEV_INTERNAL__REGFLAGS_VA_FOLD(regname, flagname_n, ...)  \
+  regname##_##flagname_n##_FLAGBIT  \
+    __VA_OPT__(| (__GBADEV_INTERNAL__RFVAF_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+        (regname, __VA_ARGS__)))
+
+#define __GBADEV_INTERNAL__REGVALUES_VA_FOLD(regname, fieldname_n, value_n, ...)  \
+  (regname##_##fieldname_n##_MASK&((value_n)<<regname##_##fieldname_n##_SHAMT))  \
+   __VA_OPT__(| __GBADEV_INTERNAL__RVVAF_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+        (regname,__VA_ARGS__))
+#define __GBADEV_INTERNAL__IRQFLAGS_VA_FOLD(irq_n, ...)  \
+  IRQ_##irq_n  \
+  __VA_OPT__(| __GBADEV_INTERNAL__IFVAF_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+        (__VA_ARGS__))
+
+#define __GBADEV_INTERNAL__KEYFLAGS_VA_FOLD(key_n, ...)  \
+  KEY_##key_n  \
+  __VA_OPT__(| __GBADEV_INTERNAL__KFVAF_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+      (__VA_ARGS__))
+ 
+
+#define __GBADEV_INTERNAL__IFVAF_3ARY() __GBADEV_INTERNAL__IRQFLAGS_VA_FOLD
+#define __GBADEV_INTERNAL__RFVAF_3ARY() __GBADEV_INTERNAL__REGFLAGS_VA_FOLD
+#define __GBADEV_INTERNAL__RVVAF_3ARY() __GBADEV_INTERNAL__REGVALUES_VA_FOLD
+#define __GBADEV_INTERNAL__KFVAF_3ARY() __GBADEV_INTERNAL__KEYFLAGS_VA_FOLD
+
+#define __GBADEV_INTERNAL__EXP(...) __GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__VA_ARGS__))))
+#define __GBADEV_INTERNAL__EXP4(...) __GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__VA_ARGS__))))
+#define __GBADEV_INTERNAL__EXP3(...) __GBADEV_INTERNAL__EXP2(__GBADEV_INTERNAL__EXP2(__GBADEV_INTERNAL__EXP2(__GBADEV_INTERNAL__EXP2(__VA_ARGS__))))
+#define __GBADEV_INTERNAL__EXP2(...) __GBADEV_INTERNAL__EXP1(__GBADEV_INTERNAL__EXP1(__GBADEV_INTERNAL__EXP1(__GBADEV_INTERNAL__EXP1(__VA_ARGS__))))
+#define __GBADEV_INTERNAL__EXP1(...) __VA_ARGS__
+#define __GBADEV_INTERNAL__PRNTHSIS ()
+
+#endif  /* c23 variadic helper funcs */
 #ifdef __cplusplus
 }
 #endif  /* C++ Name mangler guard */

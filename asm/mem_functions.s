@@ -1,7 +1,5 @@
 /** (C) 10 of September, 2025 Burt Sumner */
-
-
-	.section .ewram , "ax", %progbits
+    .section .text
     .thumb_func
     .align 2
     .global SRAM_Write
@@ -11,7 +9,7 @@ SRAM_Write:
     CMP r1, #0
     BLE .LSRAM_write_bad_return
     CMP r2, #0
-    BLE .LSRAM_write_bad_return
+    BLT .LSRAM_write_bad_return
     CMP r0, #0
     BEQ .LSRAM_write_bad_return
 

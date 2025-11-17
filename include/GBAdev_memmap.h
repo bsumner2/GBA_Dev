@@ -24,7 +24,7 @@ extern "C" {
 #define REG_BG2_CNT               REG(u16, MEM_IO + 0x000C)
 #define REG_BG3_CNT               REG(u16, MEM_IO + 0x000E)
 
-#define REG_BG_OFS                ((Coord_t*) (MEM_IO + 0x0010))
+#define REG_BG_OFS                (*((Coord_t(*)[4]) (MEM_IO + 0x0010)))
 
 #define REG_BG0_HOFS              REG(u16, MEM_IO + 0x0010)
 #define REG_BG0_VOFS              REG(u16, MEM_IO + 0x0012)
@@ -38,7 +38,7 @@ extern "C" {
 #define REG_BG3_HOFS              REG(u16, MEM_IO + 0x001C)
 #define REG_BG3_VOFS              REG(u16, MEM_IO + 0x001E)
 
-#define REG_BG_AFFINE             ((BG_Affine_Transform_t*) (MEM_IO+0x0020))
+#define REG_BG_AFFINE             (*((BG_Affine_Transform_t(*)[2]) (MEM_IO+0x0020)))
 
 #define REG_BG2_PA                REG(u16, MEM_IO + 0x0020)
 #define REG_BG2_PB                REG(u16, MEM_IO + 0x0022)
@@ -89,7 +89,7 @@ extern "C" {
 #define REG_SND_STAT              REG(u16, MEM_IO + 0x0084)
 #define REG_SND_BIAS              REG(u16, MEM_IO + 0x0088)
 
-#define REG_WAVE_RAM              ((volatile u32*) (MEM_IO + 0x0090))
+#define REG_WAVE_RAM              (*((volatile u32(*)[4]) (MEM_IO + 0x0090)))
 
 #define REG_WAVE_RAM0             REG(u32, MEM_IO + 0x0090)
 #define REG_WAVE_RAM1             REG(u32, MEM_IO + 0x0094)
@@ -99,9 +99,9 @@ extern "C" {
 #define REG_FIFO_A                REG(u32, MEM_IO + 0x00A0)
 #define REG_FIFO_B                REG(u32, MEM_IO + 0x00A4)
 
-#define REG_DMA                   ((volatile DMA_Handle_t*) (MEM_IO + 0x00B0))
+#define REG_DMA                   (*((volatile DMA_Handle_t(*)[4]) (MEM_IO + 0x00B0)))
 
-#define REG_TM                    ((volatile Timer_Handle_t*) (MEM_IO + 0x0100))
+#define REG_TM                    (*((volatile Timer_Handle_t(*)[4]) (MEM_IO + 0x0100)))
 
 #define REG_SIO_CNT               REG(u16, MEM_IO + 0x0128)
 
@@ -109,7 +109,7 @@ extern "C" {
 #define REG_SIO_DATA32            REG(u32, MEM_IO + 0x0120)
 #define REG_SIO_DATA8             REG(u16, MEM_IO + 0x012A)
 
-#define REG_SIO_MULTI             ((volatile u16*) (MEM_IO + 0x0120))
+#define REG_SIO_MULTI             (*((volatile u16(*)[4]) (MEM_IO + 0x0120)))
 #define REG_SIO_MULTI0            REG(u16, MEM_IO + 0x0120)
 #define REG_SIO_MULTI1            REG(u16, MEM_IO + 0x0122)
 #define REG_SIO_MULTI2            REG(u16, MEM_IO + 0x0124)

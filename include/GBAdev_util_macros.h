@@ -17,9 +17,10 @@ extern "C" {
 #define ALIGN(alignment) __attribute__ (( aligned(alignment) ))
 #define PACKED __attribute__ (( packed ))
 
-#define INLN static inline
+#define INLINE static inline
 
 #define ASM(...) __asm volatile (__VA_ARGS__)
+
 
 
 #ifdef __cplusplus

@@ -123,5 +123,6 @@ clean_saves: $(BIN)
 	@rm -fv $(BIN)/*.sav
 
 clean_release: $(REL)
+	@rm -rfv $(REL)/include
 	@rm -fv $(REL)/*
 
