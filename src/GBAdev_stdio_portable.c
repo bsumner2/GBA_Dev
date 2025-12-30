@@ -1,3 +1,4 @@
+#include "GBAdev_util_macros.h"
 #include <GBAdev_stdio_portable.h>
 #include <GBAdev_text_engine.h>
 #include <GBAdev_memdef.h>
@@ -33,11 +34,49 @@ static const char
                 *__GBADEV_INTERNAL__TextEngine_STDERR_DevOpTab_NameStr
                          = "INTERNAL__TextEngine_STDERR_DevOpTab";
 
-static ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
+ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
                                                           struct _reent *reent,
                                                           void *fd,
                                                           const char *text,
                                                           size_t len);
+
+static ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStdout(
+                                                          struct _reent *reent,
+                                                          void *fd,
+                                                          const char *text,
+                                                          size_t len);
+
+
+
+
+static ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStderr(
+                                                          struct _reent *reent,
+                                                          void *fd,
+                                                          const char *text,
+                                                          size_t len);
+#define EXPAND_THEN_STRINGIFY(macro) #macro
+#define ASM_TAIL_CALL_ARG_SETUP(filedes)  \
+  __asm volatile ("MOV r1, #" EXPAND_THEN_STRINGIFY(filedes))
+__attribute__ (( __naked__ ))
+ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStderr(
+                                           struct _reent *reent,
+                                           void *fd,
+                                           const char *text,
+                                           size_t len) {
+  ASM_TAIL_CALL_ARG_SETUP(STDERR_FILENO);
+  ASM("B __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream");
+}
+
+__attribute__ (( __naked__ ))
+ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStdout(
+                                           struct _reent *reent,
+                                           void *fd,
+                                           const char *text,
+                                           size_t len) {
+  ASM_TAIL_CALL_ARG_SETUP(STDOUT_FILENO);
+  ASM("B __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream");
+}
+
 
 ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
                                                           struct _reent *reent,
@@ -54,16 +93,16 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
   BOOL err_occurred = FALSE;
   if (NULL == text || len <= 0 || NULL == reent)
     return -1;
-  if (STDOUT_FILENO==(int)fd) {
+  switch ((int)fd) {
+  case STDOUT_FILENO:
     ctx = __GBADEV_INTERNAL__TextEngine_STDOUT_CtxP;
-  } else if (STDERR_FILENO==(int)fd) {
+    break;
+  case STDERR_FILENO:
     ctx = __GBADEV_INTERNAL__TextEngine_STDERR_CtxP;
-    
-  } else {
+    break;
+  default:
     return -1;
   }
-  if (NULL == ctx)
-    return -1;
 
   cursor = (Coord_t) { .x = ctx->cursor_x, .y = ctx->cursor_y };
   font = ctx->current_font;
@@ -142,6 +181,8 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
 
 BOOL TextEngine_StdioPortable_PipeOutstreamToTextCtx(int fd,
                                                      TextEngine_Ctx_t *ctx) {
+
+
   devoptab_t *dst_tab;
   if (NULL == ctx)
     return FALSE;
@@ -155,17 +196,22 @@ BOOL TextEngine_StdioPortable_PipeOutstreamToTextCtx(int fd,
   case STDOUT_FILENO:
     dst_tab = &__GBADEV_INTERNAL__TextEngine_STDOUT_DevOpTab;
     dst_tab->name = __GBADEV_INTERNAL__TextEngine_STDOUT_DevOpTab_NameStr;
+    dst_tab->write_r 
+      = __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStdout;
+    __GBADEV_INTERNAL__TextEngine_STDOUT_CtxP = ctx;
     devoptab_list[STD_OUT] = dst_tab;
     break;
   case STDERR_FILENO:
     dst_tab = &__GBADEV_INTERNAL__TextEngine_STDERR_DevOpTab;
     dst_tab->name = __GBADEV_INTERNAL__TextEngine_STDERR_DevOpTab_NameStr;
+    dst_tab->write_r
+      = __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStderr;
+    __GBADEV_INTERNAL__TextEngine_STDERR_CtxP = ctx;
     devoptab_list[STD_ERR] = dst_tab;
     break;
   default:
     return FALSE;
   }
-  dst_tab->write_r = __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream;
   setvbuf(stderr, NULL, _IONBF, 0);
   return TRUE;
 }
