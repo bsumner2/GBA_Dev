@@ -20,12 +20,13 @@ static TextEngine_TilemapState_t __GBADEV_INTERNAL__txt_engine_def_udata;
 
 static int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str);
 
-static TextEngine_Font_Glyph_t *TextEngine_LookupGlyph(
-                                                  TextEngine_Font_Glyph_t *dst,
-                                                  const TextEngine_Font_t *font,
-                                                  u32 code_pt);
+TextEngine_Font_Glyph_t *__GBADEV_INTERNAL__TextEngine_LookupGlyph(
+                                                TextEngine_Font_Glyph_t *dst,
+                                                const TextEngine_Font_t *font,
+                                                u32 code_pt);
 
-TextEngine_Font_Glyph_t *TextEngine_LookupGlyph(TextEngine_Font_Glyph_t *dst,
+TextEngine_Font_Glyph_t *__GBADEV_INTERNAL__TextEngine_LookupGlyph(
+                                                TextEngine_Font_Glyph_t *dst,
                                                 const TextEngine_Font_t *font,
                                                 u32 code_pt) {
   int idx = code_pt - font->glyph0_char_code;
@@ -78,7 +79,9 @@ int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str) {
         cursor.x = 0;
         continue;
       } else if ('\t' == code_pt) {
-        if (NULL == TextEngine_LookupGlyph(&glyph_info, font, ' ')) {
+        if (NULL == __GBADEV_INTERNAL__TextEngine_LookupGlyph(&glyph_info,
+                                                              font,
+                                                              ' ')) {
           ret = -1;
           break;
         }
@@ -101,7 +104,9 @@ int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str) {
         break;
       }
     }
-    if (NULL == TextEngine_LookupGlyph(&glyph_info, font, code_pt)) {
+    if (NULL == __GBADEV_INTERNAL__TextEngine_LookupGlyph(&glyph_info,
+                                                          font,
+                                                          code_pt)) {
       ret = -1;
       break;
     }
@@ -231,6 +236,84 @@ BOOL TextEngine_RenderCallbacks_UseDefault_Tilemap(TextEngine_Ctx_t *ctx,
   REG_DPY_CNT |= REG_FLAG(DPY_CNT, BG0)<<bg_idx;
   return TRUE;
 }
+
+BOOL TextEngine_RenderCallbacks_UseDefault_BMP(TextEngine_Ctx_t *ctx,
+                                               u16 *pal_buffer,
+                                               u16 bmp_mode,
+                                               u16 pal_buffer_slot_count,
+                                               u16 flags) {
+  if (NULL == ctx)
+    return FALSE;
+  if (NULL == ctx->current_font)
+    return FALSE;
+  void *startp;
+  u32 width, height, pitch, type;
+  if (5==bmp_mode) {
+    width = 160;
+    height = 128;
+    pitch = M5_SCREEN_WIDTH*2;
+    type = TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE5;
+    startp = VRAM_M5_P1;
+  } else {
+    width = 240;
+    height = 160; 
+    if (4==bmp_mode) {
+      pal_buffer = PAL_MEM_BG;
+      pal_buffer_slot_count = 128;
+      pitch = M4_SCREEN_WIDTH;
+      type = TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE4;
+
+      startp = VRAM_M4_P1;
+    } else if (3 == bmp_mode) {
+      pitch = M3_SCREEN_WIDTH*2;
+      type = TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE3;
+      startp = VRAM_M3;
+    } else {
+      return FALSE;  // If not 3,4, or 5 then not a valid BMP mode!
+    }
+  }
+  if (NULL == pal_buffer) {
+    return FALSE;  // pal_buffer can be passed NULL iff bmp_mode == 4, as it 
+                   // will just use pal memory anyway, and pal will be set to
+                   // that mem ptr in the above if branching logic, but 
+                   // otherwise, if it was passed NULL *and* bmp_mode is a 
+                   // 16bpp mode, then a pal buffer is needed, and so it'll
+                   // be NULL here only in these scenarios and thus is a
+                   // failure case.
+  }
+  {
+    const u16 *fpal = ctx->current_font->pal;
+    u32 fpal_clr_ct = ctx->current_font->pal_color_count;
+    if (pal_buffer_slot_count < fpal_clr_ct)
+      return FALSE;  // Need a pal buffer large enough to fully accommodate full
+                   // font palette.
+
+    Fast_Memcpy32(pal_buffer,
+                  fpal,
+                  fpal_clr_ct*sizeof(u16)/sizeof(WORD));
+    if (fpal_clr_ct&1)
+      pal_buffer[fpal_clr_ct-1] = fpal[fpal_clr_ct-1];
+  }
+  __GBADEV_INTERNAL__txt_engine_def_udata
+    .surface = (TextEngine_TextSurface_t) {
+      .width = width,
+      .height = height,
+      .pitch = pitch,
+      .type = type,
+      .pal = pal_buffer,
+      .pal_clr_ct = pal_buffer_slot_count,
+      .sdata = startp,
+      .flags = flags
+    };
+  ctx->userdata = &__GBADEV_INTERNAL__txt_engine_def_udata.surface;
+  ctx->glyph_render_cb = TextEngine_DefaultRenderCallback_BMP;
+  ctx->clear_render_cb = TextEngine_DefaultClearCallback_BMP;
+  return TRUE;
+}
+
+
+
+
 
 
 __attribute__ ((__format__ ( __printf__, 2, 3 ) ))

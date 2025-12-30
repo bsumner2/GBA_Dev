@@ -14,18 +14,32 @@ extern "C" {
 #define TEXT_ENGINE_TEXT_SURFACE_ENCODING_MASK    0x001C
 
 typedef enum e_txt_surface_type_flags {
-  TEXT_ENGINE_TEXT_SURFACE_BMP         =          0x0001,
-  TEXT_ENGINE_TEXT_SURFACE_TILEMAP     =          0x0002,
-  TEXT_ENGINE_TEXT_SURFACE_INDEXED16   =          0x0004,
-  TEXT_ENGINE_TEXT_SURFACE_INDEXED256  =          0x0008,
-  TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555 =          0x0010,
+  TEXT_ENGINE_TEXT_SURFACE_BMP             =      0x0001,
+  TEXT_ENGINE_TEXT_SURFACE_TILEMAP         =      0x0002,
+  TEXT_ENGINE_TEXT_SURFACE_INDEXED16       =      0x0004,
+  TEXT_ENGINE_TEXT_SURFACE_INDEXED256      =      0x0008,
+  TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555     =      0x0010,
+  TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED =      0x0020
 } TextEngine_TextSurface_TypeFlag_e;
+
+typedef enum e_txt_engine_txt_surface_flags {
+  TEXT_ENGINE_TEXT_SURFACE_PAGE_FLIP_ON_TEXTBOX_OVERFLOW =              0x0001,
+} TextEngine_TextSurface_Flags_e;
 
 #define TEXT_ENGINE_TEXT_SURFACE_TYPE_4BPP_TILEMAP  \
   (TEXT_ENGINE_TEXT_SURFACE_TILEMAP|TEXT_ENGINE_TEXT_SURFACE_INDEXED16)
 #define TEXT_ENGINE_TEXT_SURFACE_TYPE_8BPP_TILEMAP  \
   (TEXT_ENGINE_TEXT_SURFACE_TILEMAP|TEXT_ENGINE_TEXT_SURFACE_INDEXED256)
-
+#define TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE3  \
+  (TEXT_ENGINE_TEXT_SURFACE_BMP|TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555)
+#define TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE4  \
+  (TEXT_ENGINE_TEXT_SURFACE_BMP |  \
+   TEXT_ENGINE_TEXT_SURFACE_INDEXED256 |  \
+   TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED)
+#define TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE5  \
+  (TEXT_ENGINE_TEXT_SURFACE_BMP |  \
+   TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555 |  \
+   TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED)
 typedef enum e_txt_engine_margin_idx {
   TEXT_ENGINE_RENDER_MARGIN_LEFT=0,
   TEXT_ENGINE_RENDER_MARGIN_TOP,
@@ -77,7 +91,11 @@ struct s_txt_engine_txt_surface {
   u16 width;
   u16 height;
   u16 type;
+  u16 pal_clr_ct;
+  u16 flags;
 };
+
+
 
 struct s_txt_engine_tilemap_state {
   TextEngine_TextSurface_t surface;
@@ -99,7 +117,6 @@ struct s_txt_engine_font_glyph {
 };
 
 struct s_txt_engine_ctx {
-  TextEngine_TextSurface_t text_window;
   i16 cursor_x;
   i16 cursor_y;
   TextEngine_Font_t *current_font;
@@ -121,6 +138,11 @@ struct s_txt_engine_ctx {
 BOOL TextEngine_RenderCallbacks_UseDefault_Tilemap(TextEngine_Ctx_t *ctx,
                                                    u32 bg_idx,
                                                    u32 bg_flags);
+BOOL TextEngine_RenderCallbacks_UseDefault_BMP(TextEngine_Ctx_t *ctx,
+                                               u16 *pal_buffer,
+                                               u16 bmp_mode,
+                                               u16 pal_buffer_slot_count,
+                                               u16 flags);
 
 void TextEngine_RenderCallbacks_UseCustom(TextEngine_Ctx_t *ctx,
                                           TextEngine_GlyphRender_cb render_cb,
@@ -137,7 +159,7 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
                                                 u16*,
                                                 const u16*,
                                                 void*);
-IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Mode3(
+IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
                                                 const TextEngine_Font_Glyph_t*,
                                                 Coord_t*,
                                                 u16*,
@@ -146,7 +168,7 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Mode3(
 
 IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t*,
                                                         void*);
-IWRAM_CODE void TextEngine_DefaultClearCallback_Mode3(const Rect_t*,
+IWRAM_CODE void TextEngine_DefaultClearCallback_BMP(const Rect_t*,
                                                       void*);
 
 #ifdef __cplusplus

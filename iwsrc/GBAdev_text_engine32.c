@@ -576,20 +576,126 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
 
 
 // Stub
-IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Mode3(const TextEngine_Font_Glyph_t*,
-                                                       Coord_t*,
-                                                       u16*,
-                                                       const u16*,
-                                                       void*) {
+IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
+                                    const TextEngine_Font_Glyph_t *glyph_info,
+                                    Coord_t *cursor,
+                                    u16 *pal,
+                                    const u16 *margins,
+                                    void *userdata) {
+  TextEngine_TextSurface_t *surf = (TextEngine_TextSurface_t*)userdata;
+  u16 *cur_scanline = surf->sdata, *writep;
+  u16 *surf_pal = surf->pal;
+  const u8 *gdata = glyph_info->data;
+  u32 LFT = margins[TEXT_ENGINE_RENDER_MARGIN_LEFT],
+      TOP = margins[TEXT_ENGINE_RENDER_MARGIN_TOP],
+      RGT = margins[TEXT_ENGINE_RENDER_MARGIN_RIGHT],
+      BTM = margins[TEXT_ENGINE_RENDER_MARGIN_BOTTOM],
+      TBOX_W = RGT-LFT,
+      TBOX_H = BTM-TOP,
+      GW = glyph_info->width,
+      GH = glyph_info->height,
+      GPITCH = glyph_info->cell_pitch,
+      PITCH = surf->pitch,
+      GBPP = glyph_info->bpp;
+
+  u32 start_x=cursor->x, start_y=cursor->y, gpixel;
+  BOOL is_16bpp = surf->type & TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555,
+       big_endian = glyph_info->bitpack_big_endian;
+  {
+    BOOL write_box_ovf = FALSE;
+  
+    if ((start_x + GW) > TBOX_W) {
+      cursor->x = 0;
+      cursor->y += glyph_info->max_height;
+      if ((cursor->y + GH) > TBOX_H) {
+        write_box_ovf = TRUE;
+      } else {
+        start_x = LFT, start_y = cursor->y + TOP;
+      }
+    } else if ((cursor->y + GH) > TBOX_H) {
+      write_box_ovf = TRUE;
+    } else {
+      start_x = LFT+cursor->x, start_y = cursor->y + TOP;
+    }
+    if (write_box_ovf) {
+      if (surf->type&TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED &&
+          surf->flags&TEXT_ENGINE_TEXT_SURFACE_PAGE_FLIP_ON_TEXTBOX_OVERFLOW) {
+        UIPTR_T newpage = (UIPTR_T)surf->sdata;
+        if (TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE5==surf->type) {
+          surf->sdata = (void*)(newpage^M5_PAGE_SIZE);
+        } else {
+          surf->sdata = (void*)(newpage^M4_PAGE_SIZE);
+        }
+      }
+      return FALSE;
+    }
+  }
+  if (is_16bpp)
+    cur_scanline += start_x + start_y*PITCH/2;
+  else
+    cur_scanline += (start_x>>1) + start_y*PITCH/2;
+
+  for (u32 wx,x,y = 0; GH > y; ++y, cur_scanline+=PITCH/2, gdata +=GPITCH) {
+    writep = cur_scanline;
+    for (wx=start_x,x = 0; GW > x; ++x, ++wx) {
+      switch (GBPP) {
+      case 1:
+        if (big_endian)
+          gpixel = 0!=(gdata[x/8]&(0x80>>(x&7)));
+        else
+          gpixel = 0!=(gdata[x/8]&(1<<(x&7)));
+        break;
+      case 4:
+        if (big_endian^(x&1))
+          gpixel = 0x0F&(gdata[x/2]>>4);
+        else
+          gpixel = 0x0F&gdata[x/2];
+        break;
+      case 8:
+        gpixel = gdata[x];
+      }
+      if (is_16bpp) {
+        *writep++ = surf_pal[gpixel];
+      } else {
+        if (wx&1) {
+          *writep &= 0x00FF;
+          *writep++ |= 0xFF00&(gpixel<<8);
+        } else {
+          *writep &= 0xFF00;
+          *writep |= gpixel&0x00FF;
+        }
+      }
+    }
+  }
+  cursor->x += GW;
   return TRUE;
 }
 
 // Stub
-IWRAM_CODE void TextEngine_DefaultClearCallback_Mode3(const Rect_t*,
-                                                      void*) {
-  return;
+IWRAM_CODE void TextEngine_DefaultClearCallback_BMP(const Rect_t *bounds,
+                                                      void *udata) {
+  TextEngine_TextSurface_t *surf = (TextEngine_TextSurface_t*)udata;
+  const u32 PITCH = surf->pitch, BW=bounds->w, BH = bounds->h,
+        START_X = bounds->x;
+  u16 *cur_scanline = surf->sdata, *writep;
+  BOOL is_16bpp = surf->type&TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555;
+  if (is_16bpp)
+    cur_scanline += bounds->x + bounds->y*PITCH;
+  else
+    cur_scanline += (bounds->x>>1) + bounds->y*PITCH/2;
+  for (u32 wx, x,y=0; BH > y; ++y, cur_scanline += PITCH) {
+    writep = cur_scanline;
+    for (wx = START_X, x = 0; BW > x; ++x, ++wx) {
+      if (is_16bpp)
+        *writep++ = 0;
+      else if (wx&1)
+        *writep++ &= 0x00FF;
+      else
+        *writep &= 0xFF00;
+    }
+  }
 }
 
 
 #endif  /* Until we've created viable ASM versions of the default render and 
-         * clear callbacks for Mode3, we use their C-written counterparts. */
+         * clear callbacks for BMP, we use their C-written counterparts. */
