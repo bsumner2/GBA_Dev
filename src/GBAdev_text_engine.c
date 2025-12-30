@@ -76,6 +76,7 @@ int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str) {
       } else if ('\n' == code_pt) {
         cursor.y += font->glyph_height;  // De facto max height field
         cursor.x = 0;
+        continue;
       } else if ('\t' == code_pt) {
         if (NULL == TextEngine_LookupGlyph(&glyph_info, font, ' ')) {
           ret = -1;
