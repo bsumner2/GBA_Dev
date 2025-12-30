@@ -218,6 +218,15 @@ IWRAM_CODE BOOL __GBADEV_INTERNAL__TextEngine_ProcessEscapeChars(
 
 #ifdef __DEFAULT_CALLBACK_TILEMAP_ASM_VERSIONS_UNIMPLEMENTED__
 
+
+#if 0  // Block off old implementation that failed as I forgot about how
+       // MEM_VRAM databus doesn't allow byte-level write ops. Trying to write
+       // ((u8*)MEM_VRAM)[0] = (u8)foo;
+       // results in the following effectively happening to the memory:
+       // ((u16*)MEM_VRAM)[0] = (u16)foo|((u16)foo<<8)
+       // Therefore, the solution is to cast dst to u16 and adjust all pointer
+       // indexes to accommodate new ptr type, which is now 2 bytes per index
+       // Fixed implementation is in the #else preprocessor block
 IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
                                     const TextEngine_Font_Glyph_t *glyph_info,
                                     Coord_t *cursor,
@@ -319,6 +328,197 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
 
   return TRUE;
 }
+#else  // Fixed impl below:
+
+IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
+                                    const TextEngine_Font_Glyph_t *glyph_info,
+                                    Coord_t *cursor,
+                                    u16 *pal,
+                                    const u16 *margins,
+                                    void *userdata) {
+  TextEngine_TilemapState_t *state = (TextEngine_TilemapState_t*)userdata;
+  const u32 
+    LFT = margins[TEXT_ENGINE_RENDER_MARGIN_LEFT],
+    TOP = margins[TEXT_ENGINE_RENDER_MARGIN_TOP],
+    RGT = margins[TEXT_ENGINE_RENDER_MARGIN_RIGHT],
+    BTM = margins[TEXT_ENGINE_RENDER_MARGIN_BOTTOM],
+    TXTBOX_W = RGT - LFT,
+    TXTBOX_H = BTM - TOP,
+    GW = glyph_info->width, 
+    GH = glyph_info->height,
+    GPITCH = glyph_info->cell_pitch;
+  u32 start_x = cursor->x+LFT, start_y = cursor->y+TOP;
+  if ((cursor->x + GW) > TXTBOX_W) {
+    cursor->x = 0;
+    cursor->y += glyph_info->max_height;
+    start_x = LFT;
+    start_y = cursor->y + TOP;
+    if ((cursor->y + GH) > TXTBOX_H)
+      return FALSE;
+    state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT, start_y);
+    state->tile_x_ofs = LFT&7;
+    state->tile_y_ofs = start_y&7;
+  } else if ((cursor->y + GH) > TXTBOX_H) {
+    return FALSE;
+  } else {
+    state->cur_tile_idx = TilemapState_CalculateCurTileIdx(start_x, start_y);
+    state->tile_x_ofs = start_x&7;
+    state->tile_y_ofs = start_y&7;
+  }
+  const u8 *src = (const u8*)glyph_info->data;
+  u8 *basetile, *dst = (u8*)state->surface.sdata;
+  u32 src_y, src_x, dst_x_base = state->tile_x_ofs,
+      dst_y = state->tile_y_ofs, dst_x;
+  u32 tile_sz, tile_pitch;
+  BOOL is_8bpp = 0!=(state->surface.type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256),
+       big_endian = glyph_info->bitpack_big_endian;
+  tile_sz = is_8bpp ? 64 : 32;
+  if (is_8bpp)
+    dst += state->cur_tile_idx<<6, tile_pitch = 8;
+  else
+    dst += state->cur_tile_idx<<5, tile_pitch = 4;
+  basetile = dst;
+  for (src_y = 0; GH > src_y; ++src_y, src+=GPITCH) {
+    dst = basetile + dst_y*tile_pitch;
+    for (dst_x = dst_x_base, src_x = 0; GW > src_x; ++src_x) {
+      if (is_8bpp) {
+        if (8 == glyph_info->bpp) {
+//          dst[dst_x++] = src[src_x];
+          if (dst_x&1) {
+            ((u16*)dst)[dst_x>>1] &= 0x00FF;
+            ((u16*)dst)[dst_x++>>1] |= src[src_x]<<8;
+          } else {
+            ((u16*)dst)[dst_x>>1] &= 0xFF00;
+            ((u16*)dst)[dst_x++>>1] |= src[src_x];
+          }
+        } else if (4 == glyph_info->bpp) {
+          if ((src_x&1)^big_endian) {
+            if (dst_x&1) {
+              ((u16*)dst)[dst_x>>1] &= 0x00FF;
+              ((u16*)dst)[dst_x++>>1] |= (src[src_x>>1]<<4)&0x0F00;
+            } else {
+              ((u16*)dst)[dst_x>>1] &= 0xFF00;
+              ((u16*)dst)[dst_x++>>1] |= (src[src_x>>1]>>4)&0x000F;
+            }
+          } else {
+            if (dst_x&1) {
+              ((u16*)dst)[dst_x>>1] &= 0x00FF;
+              ((u16*)dst)[dst_x++>>1] |= (src[src_x>>1]<<8)&0x0F00;
+            } else {
+              ((u16*)dst)[dst_x>>1] &= 0xFF00;
+              ((u16*)dst)[dst_x++>>1] |= src[src_x>>1]&0x000F;
+            }
+          }
+        } else {
+          if (big_endian) {
+            if (dst_x&1) {
+              ((u16*)dst)[dst_x>>1] &= 0x00FF;
+              ((u16*)dst)[dst_x++>>1] |= src[src_x/8]&(0x80>>(src_x&7)) 
+                                                ? 0x0100 : 0;
+            } else {
+              ((u16*)dst)[dst_x>>1] &= 0xFF00;
+              ((u16*)dst)[dst_x++>>1] |= src[src_x/8]&(0x80>>(src_x&7)) 
+                                                ? 0x0001 : 0;
+            }
+          } else {
+            if (dst_x&1) {
+              ((u16*)dst)[dst_x>>1] &= 0x00FF;
+              ((u16*)dst)[dst_x++>>1] |= src[src_x/8]&(1<<(src_x&7)) 
+                                                ? 0x0100 : 0;
+            } else {
+              ((u16*)dst)[dst_x>>1] &= 0xFF00;
+              ((u16*)dst)[dst_x++>>1] |= src[src_x/8]&(1<<(src_x&7)) 
+                                                ? 0x0001 : 0;
+            }
+          }
+        }
+      } else if (dst_x&1) {
+        if (4==glyph_info->bpp) {
+          if (big_endian^(src_x&1)) {
+            if (dst_x&2) {
+              ((u16*)dst)[dst_x>>2] &= 0x0FFF;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]<<8)&0xF000;
+            } else {
+              ((u16*)dst)[dst_x>>2] &= 0xFF0F;
+              ((u16*)dst)[dst_x++>>2] |= src[src_x>>1]&0x00F0;
+
+            }
+          } else {
+            if (dst_x&2) {
+              ((u16*)dst)[dst_x>>2] &= 0x0FFF;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]<<12)&0xF000;
+            } else {
+              ((u16*)dst)[dst_x>>2] &= 0xFF0F;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]<<4)&0x00F0;
+            }
+          }
+        } else {
+          if (dst_x&2) {
+            ((u16*)dst)[dst_x>>2] &= 0x0FFF;
+            ((u16*)dst)[dst_x++>>2] |= (src[src_x>>3]&(big_endian
+                                            ?0x80>>(src_x&7)
+                                            :1<<(src_x&7))) ? 0x1000 : 0;
+          } else {
+            ((u16*)dst)[dst_x>>2] &= 0xFF0F;
+            ((u16*)dst)[dst_x++>>2] |= (src[src_x>>3]&(big_endian
+                                            ?0x80>>(src_x&7)
+                                            :1<<(src_x&7))) ? 0x0010 : 0;
+          }
+
+        }
+      } else {
+        if (4==glyph_info->bpp) {
+          if (big_endian^(src_x&1)) {
+            if (dst_x&2) {
+              ((u16*)dst)[dst_x>>2] &= 0xF0FF;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]<<4)&0x0F00;
+            } else {
+              ((u16*)dst)[dst_x>>2] &= 0xFFF0;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]>>4)&0x000F;
+            }
+          } else {
+            if (dst_x&2) {
+              ((u16*)dst)[dst_x>>2] &= 0xF0FF;
+              ((u16*)dst)[dst_x++>>2] |= (src[src_x>>1]<<8)&0x0F00;
+            } else {
+              ((u16*)dst)[dst_x>>2] &= 0xFFF0;
+              ((u16*)dst)[dst_x++>>2] |= src[src_x>>1]&0x000F;
+            }
+          }
+        } else {
+          if (dst_x&2) {
+            ((u16*)dst)[dst_x>>2] &= 0xF0FF;
+            ((u16*)dst)[dst_x++>>2] |= (src[src_x>>3]&(big_endian
+                                                ?0x80>>(src_x&7)
+                                                :1<<(src_x&7))) ? 0x0100 : 0;
+          } else {
+            ((u16*)dst)[dst_x>>2] &= 0xFFF0;
+            ((u16*)dst)[dst_x++>>2] |= (src[src_x>>3]&(big_endian
+                                              ?0x80>>(src_x&7)
+                                              :1<<(src_x&7))) ? 0x0001 : 0;
+          }
+        }
+      }
+      if (8>dst_x)
+        continue;
+      dst_x = 0;
+      dst = basetile+tile_sz+dst_y*tile_pitch;
+    }
+    ++dst_y;
+    if (8>dst_y)
+      continue;
+    dst_y = 0;
+    basetile += is_8bpp ? 30*64 : 30*32;
+  }
+  cursor->x += GW;
+  state->tile_x_ofs = (LFT+cursor->x)&7;
+  state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT+cursor->x,
+                                                         TOP+cursor->y);
+
+  return TRUE;
+}
+
+#endif  /* tmp block for fixed Tilemap Render CB's fixed impl */
 
 IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
                                                         void *userdata) {
@@ -332,16 +532,29 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
    basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<5;
   const u32 W = area->w, H = area->h, TSZ = is_8bpp ? 64 : 32,
         TPITCH = is_8bpp ? 8 : 4;
-  u32 dst_x = area->x&7, dst_y = area->y&7, rx=0, ry=0;
+  u32 dst_x_base = area->x&7, dst_y = area->y&7, dst_x, rx=0, ry=0;
   for (ry = 0; H > ry; ++ry) {
     curtile = basetile+dst_y*TPITCH;
-    for (rx = 0; W > rx; ++rx) {
-      if (is_8bpp)
-        curtile[dst_x++] = 0;
-      else if (dst_x&1)
-        curtile[dst_x++>>1] &= 0x0F;
-      else
-       curtile[dst_x++>>1] &= 0xF0;
+    for (dst_x = dst_x_base, rx = 0; W > rx; ++rx) {
+      if (is_8bpp) {
+        if (dst_x&1) {
+          ((u16*)curtile)[dst_x++>>1] &= 0x00FF;
+        } else {
+          ((u16*)curtile)[dst_x++>>1] &= 0xFF00;
+        }
+      } else if (dst_x&2) {
+        if (dst_x&1) {
+          ((u16*)curtile)[dst_x++>>2] &= 0x0FFF;
+        } else {
+          ((u16*)curtile)[dst_x++>>2] &= 0xF0FF;
+        }
+      } else {
+        if (dst_x&1) {
+          ((u16*)curtile)[dst_x++>>2] &= 0xFF0F;
+        } else {
+          ((u16*)curtile)[dst_x++>>2] &= 0xFFF0;
+        }
+      }
       if (8 > dst_x)
         continue;
       dst_x = 0;

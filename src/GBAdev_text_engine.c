@@ -64,8 +64,8 @@ int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str) {
   u32 code_pt;
   int ret = 0;
   while (code_pt = *str++, 0!=code_pt) {
-    if (code_pt < 32) {
-      if ('\t' != code_pt) {
+    if (code_pt < font->glyph0_char_code) {
+      if ('\x1b' == code_pt) {
         if (!__GBADEV_INTERNAL__TextEngine_ProcessEscapeChars(ctx,
                                                               &cursor,
                                                               &str)) {
@@ -73,14 +73,38 @@ int TextEngine_ProcessString(TextEngine_Ctx_t *ctx, const char *str) {
           break;
         }
         continue;
+      } else if ('\n' == code_pt) {
+        cursor.y += font->glyph_height;  // De facto max height field
+        cursor.x = 0;
+      } else if ('\t' == code_pt) {
+        if (NULL == TextEngine_LookupGlyph(&glyph_info, font, ' ')) {
+          ret = -1;
+          break;
+        }
+        for (code_pt=0; 4>code_pt; ++code_pt) {
+          if (!render_cb(&glyph_info,
+                         &cursor,
+                         ctx->pal,
+                         ctx->margins,
+                         ctx->userdata)) {
+            ret = -1;
+            break;
+          }
+        }
+        if (-1 == ret)
+          break;
+        else
+          continue;
+      } else {
+        ret = -1;
+        break;
       }
     }
     if (NULL == TextEngine_LookupGlyph(&glyph_info, font, code_pt)) {
       ret = -1;
       break;
     }
-    if (!ctx
-        ->glyph_render_cb(&glyph_info,
+    if (!render_cb(&glyph_info,
                           &cursor,
                           ctx->pal,
                           ctx->margins,
