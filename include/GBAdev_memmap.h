@@ -1,10 +1,10 @@
 /** (C) 7 of September, 2025 Burt Sumner */
 /** Free to use, but this copyright message must remain here */
 
-#ifndef _GBADEV_MEMMAP_
-#define _GBADEV_MEMMAP_
-#include "GBAdev_memdef.h"
-#include "GBAdev_types.h"
+#ifndef _GBADEV_MEMMAP_H_
+#define _GBADEV_MEMMAP_H_
+#include <GBAdev_memdef.h>
+#include <GBAdev_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -165,4 +165,4 @@ extern "C" {
 }
 #endif  /* C++ Name mangler guard */
 
-#endif  /* _GBADEV_MEMMAP_ */
+#endif  /* _GBADEV_MEMMAP_H_ */

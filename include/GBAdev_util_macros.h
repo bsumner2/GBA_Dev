@@ -1,8 +1,8 @@
 /** (C) 7 of September, 2025 Burt Sumner */
 /** Free to use, but this copyright message must remain here */
 
-#ifndef _GBADEV_UTIL_MACROS_
-#define _GBADEV_UTIL_MACROS_
+#ifndef _GBADEV_UTIL_MACROS_H_
+#define _GBADEV_UTIL_MACROS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +14,7 @@ extern "C" {
 #define IWRAM_DATA __attribute__ (( section(".iwram") ))
 #define EWRAM_DATA __attribute__ (( section(".ewram") ))
 #define EWRAM_BSS __attribute__ (( section(".sbss") ))
+#define IWRAM_BSS __attribute__ (( section(".bss") ))
 #define ALIGN(alignment) __attribute__ (( aligned(alignment) ))
 #define PACKED __attribute__ (( packed ))
 
@@ -27,4 +28,4 @@ extern "C" {
 }
 #endif  /* C++ Name mangler guard */
 
-#endif  /* _GBADEV_UTIL_MACROS_ */
+#endif  /* _GBADEV_UTIL_MACROS_H_ */

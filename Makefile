@@ -16,6 +16,7 @@ SRC=./src
 IWRAM_SRC=./iwsrc
 BIN=./bin
 INC=./include
+PRIV_INC=./include_priv
 REL=./release
 
 ROM_C_OBJS=$(shell find $(SRC) -type f -iname '*.c' | sed 's-\./src-\./bin-g' | sed 's/\.c/\.o/g')
@@ -46,7 +47,7 @@ ARCH=-mthumb-interwork -mthumb
 IARCH=-mthumb-interwork -marm
 SPECS=-specs=gba.specs
 
-CFLAGS_BASE=-O2 -Wall -Wextra -fno-strict-aliasing -I$(INC) -DUSE_BIOS_VSYNC
+CFLAGS_BASE=-O2 -Wall -Wextra -fno-strict-aliasing -I$(INC) -I$(PRIV_INC) -DUSE_BIOS_VSYNC
 
 ROM_CFLAGS=$(CFLAGS_BASE) $(ARCH)
 
@@ -54,7 +55,7 @@ IWRAM_CFLAGS=$(CFLAGS_BASE) $(IARCH) -mlong-calls
 
 LDFLAGS=$(ARCH) $(SPECS)
 
-ASFLAGS=-xassembler-with-cpp -I$(INC)
+ASFLAGS=-xassembler-with-cpp -I$(INC) -I$(PRIV_INC)
 
 
 

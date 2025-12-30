@@ -1,11 +1,11 @@
 /** (C) 8 of September, 2025 Burt Sumner */
 /** Free to use, but this copyright message must remain here */
 
-#ifndef _GBADEV_TYPES_
-#define _GBADEV_TYPES_
+#ifndef _GBADEV_TYPES_H_
+#define _GBADEV_TYPES_H_
 
 
-#include "GBAdev_util_macros.h"
+#include <GBAdev_util_macros.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,16 +15,27 @@ typedef unsigned short int      u16;
 typedef unsigned long int       u32;
 typedef unsigned long long int  u64;
 
-typedef char                    i8;
-typedef short int               i16;
-typedef long int                i32;
-typedef long long int           i64;
+typedef signed char             i8;
+typedef signed short int        i16;
+typedef signed long int         i32;
+typedef signed long long int    i64;
 
 typedef _Bool                   BOOL;
 
 typedef unsigned long int       WORD;
 
 typedef unsigned long int       UIPTR_T;
+
+typedef signed long int         Fixed24_8_t;
+typedef signed long int         Fixed20_12_t;
+typedef signed char             Fixed1_6_t;
+
+typedef unsigned long int       UFixed24_8_t;
+typedef unsigned long int       UFixed20_12_t;
+typedef unsigned char           UFixed1_6_t;
+
+
+
 
 typedef void (*IRQ_Callback_t)(void);
 typedef enum e_irq_index {
@@ -142,7 +153,10 @@ typedef struct s_ieif_fields {
 } ALIGN(2) PACKED IE_Fields_t, IF_Fields_t;
 
 typedef union u_dma_cnt { 
-  u32 raw; 
+  struct {
+    u16 n_transfers;
+    u16 fields;
+  } raw;
   DMA_Cnt_Fields_t fields;
 } DMA_Cnt_t;
  
@@ -260,6 +274,10 @@ typedef struct s_unsigned_coord {
   u16 x, y;
 } ALIGN(4) UCoord_t;
 
+typedef struct s_rect {
+  u16 x, y, w, h;
+} Rect_t;
+
 typedef struct bg_screen_entry_fields {
   u32 tile_idx : 10;
   BOOL hflip : 1;
@@ -278,4 +296,4 @@ typedef u16 ScreenBlock_t[1024];
 }
 #endif  /* C++ Name mangler guard */
 
-#endif  /* _GBADEV_TYPES_ */
+#endif  /* _GBADEV_TYPES_H_ */
