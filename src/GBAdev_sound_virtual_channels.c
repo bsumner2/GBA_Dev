@@ -93,7 +93,7 @@ void DirectSound_VChannel_MixA(void) {
 
   
   i = 0;
-  Fast_Memset32(tmp_buf, 0, sizeof(tmp_buf)/sizeof(WORD));
+  Fast_Memset32(tmp_buf, 0, sizeof(tmp_buf)/(sizeof(WORD)));
 
   for (cur_channel = 0; DSOUND_VCHANNEL_CT > cur_channel; ++cur_channel) {
     channel = &VIRTUAL_CHANNELS[cur_channel];

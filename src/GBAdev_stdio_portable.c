@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <sys/unistd.h>
 
-extern IWRAM_CODE BOOL __GBADEV_INTERNAL__TextEngine_ProcessEscapeChars(
+extern BOOL __GBADEV_INTERNAL__TextEngine_ProcessEscapeChars_ANSI(
                                                          TextEngine_Ctx_t *ctx, 
-                                                         Coord_t *cursor,
+                                                         const char **iostr);
+
+extern BOOL __GBADEV_INTERNAL__TextEngine_ProcessEscapeChars_GBADev(
+                                                         TextEngine_Ctx_t *ctx, 
                                                          const char **iostr);
 
 extern TextEngine_Font_Glyph_t *__GBADEV_INTERNAL__TextEngine_LookupGlyph(
@@ -57,6 +60,8 @@ static ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStderr(
 #define EXPAND_THEN_STRINGIFY(macro) #macro
 #define ASM_TAIL_CALL_ARG_SETUP(filedes)  \
   __asm volatile ("MOV r1, #" EXPAND_THEN_STRINGIFY(filedes))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 __attribute__ (( __naked__ ))
 ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStderr(
                                            struct _reent *reent,
@@ -76,6 +81,7 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStreamStdout(
   ASM_TAIL_CALL_ARG_SETUP(STDOUT_FILENO);
   ASM("B __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream");
 }
+#pragma GCC diagnostic pop
 
 
 ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
@@ -83,12 +89,12 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
                                                           void *fd,
                                                           const char *text,
                                                           size_t len) {
-  TextEngine_Font_Glyph_t glyph_info;
+  TextEngine_Font_Glyph_t glyph_info; 
   TextEngine_GlyphRender_cb ren_cb;
-  TextEngine_Font_t *font;
+  const TextEngine_Font_t *font;
   TextEngine_Ctx_t *ctx = NULL;
   const char *const BEGINP = text, *const ENDP = &text[len];
-  Coord_t cursor;
+  Coord_t *cursor;
   int c;
   BOOL err_occurred = FALSE;
   if (NULL == text || len <= 0 || NULL == reent)
@@ -103,28 +109,51 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
   default:
     return -1;
   }
-
-  cursor = (Coord_t) { .x = ctx->cursor_x, .y = ctx->cursor_y };
+  cursor = &ctx->surface.cursor;
   font = ctx->current_font;
   ren_cb = ctx->glyph_render_cb;
   if (NULL == font)
     return -1;
+  glyph_info = (TextEngine_Font_Glyph_t) {
+    .data = NULL,
+    .width = font->glyph_width,
+    .height = font->glyph_height,
+    .max_width = font->glyph_width,
+    .max_height = font->glyph_height,
+    .cell_pitch = font->cell_pitch,
+    .bpp = font->bitdepth,
+    .bitpack_big_endian = font->bitpack_big_endian
+  };
+
   if (NULL == ren_cb)
     return -1;
 
-  while (c=*text++, '\0'!=c && text < ENDP) {
+  for (c=*text; '\0'!=c && text < ENDP; c=*++text) {
     if (c < font->glyph0_char_code) {
-      if ('\x1b' == c) {
-        if (!__GBADEV_INTERNAL__TextEngine_ProcessEscapeChars(ctx, 
-                                                              &cursor, 
-                                                              &text)) {
-          err_occurred = TRUE;
+      if ((unsigned)(c-'\x1b') <= 1) {
+        ++text;
+        switch (c) {
+        case '\x1b':
+          if (!__GBADEV_INTERNAL__TextEngine_ProcessEscapeChars_ANSI(ctx, 
+                                                                     &text)) {
+            break;
+          }
+          continue;
+        case '\x1c':
+          if (!__GBADEV_INTERNAL__TextEngine_ProcessEscapeChars_GBADev(ctx,
+                                                                       &text)) {
+            break;
+          }
+          continue;
+        default:
           break;
         }
-        continue;
+        // If we broke switch without continuing, then failure case
+        err_occurred = TRUE;
+        break;
       } else if ('\n' == c) {
-        cursor.y += font->glyph_height;
-        cursor.x = 0;
+        cursor->y += font->glyph_height;
+        cursor->x = 0;
         continue;
       } else if ('\t' == c) {
         if (NULL == __GBADEV_INTERNAL__TextEngine_LookupGlyph(&glyph_info,
@@ -135,9 +164,7 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
         }
         for (c = 0; 4>c; ++c) {
           if (!ren_cb(&glyph_info, 
-                      &cursor,
-                      ctx->pal,
-                      ctx->margins,
+                      &ctx->surface,
                       ctx->userdata)) {
             err_occurred = TRUE;
             break;
@@ -159,17 +186,13 @@ ssize_t __GBADEV_INTERNAL__TextEngine_StdioPortable_ProcStream(
       break;
     }
     if (!ren_cb(&glyph_info,
-                &cursor,
-                ctx->pal,
-                ctx->margins,
+                &ctx->surface,
                 ctx->userdata)) {
       err_occurred = TRUE;
       break;
     }
   }
 
-  ctx->cursor_x = cursor.x;
-  ctx->cursor_y = cursor.y;
   if (err_occurred)
     return -1;
   else

@@ -41,11 +41,11 @@ typedef enum e_txt_engine_txt_surface_flags {
    TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555 |  \
    TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED)
 typedef enum e_txt_engine_margin_idx {
-  TEXT_ENGINE_RENDER_MARGIN_LEFT=0,
-  TEXT_ENGINE_RENDER_MARGIN_TOP,
-  TEXT_ENGINE_RENDER_MARGIN_RIGHT,
-  TEXT_ENGINE_RENDER_MARGIN_BOTTOM,
-  TEXT_ENGINE_RENDER_MARGINS_CT
+  TEXT_ENGINE_TEXT_SURFACE_MARGIN_LEFT=0,
+  TEXT_ENGINE_TEXT_SURFACE_MARGIN_TOP,
+  TEXT_ENGINE_TEXT_SURFACE_MARGIN_RIGHT,
+  TEXT_ENGINE_TEXT_SURFACE_MARGIN_BOTTOM,
+  TEXT_ENGINE_TEXT_SURFACE_MARGIN_CT
 } TextEngine_MarginIndex_e;
 
 typedef struct s_txt_engine_font TextEngine_Font_t;
@@ -56,11 +56,12 @@ typedef struct s_txt_engine_ctx TextEngine_Ctx_t;
 
 typedef BOOL (*TextEngine_GlyphRender_cb)(
                                     const TextEngine_Font_Glyph_t *glyph_info,
-                                    Coord_t *cursor_in_out,
-                                    u16 *pal,
-                                    const u16 *margins,
+                                    TextEngine_TextSurface_t *render_surface,
                                     void *userdata);
-typedef void (*TextEngine_ClearRender_cb)(const Rect_t *bounds, void *userdata);
+typedef void (*TextEngine_ClearRender_cb)(
+                                  const Rect_t *bounds,
+                                  TextEngine_TextSurface_t *render_surface,
+                                  void *userdata);
 
 struct s_txt_engine_font {
   const void *glyph_data;
@@ -86,13 +87,18 @@ struct s_txt_engine_font {
 
 struct s_txt_engine_txt_surface {
   void *sdata;
+  void *screen_ent_data;
   u16 *pal;
+  u8 *idx_map;
+  u16 margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_CT];
+  Coord_t cursor;
   u32 pitch;
   u16 width;
   u16 height;
   u16 type;
   u16 pal_clr_ct;
   u16 flags;
+  u8 cur_palbank;
 };
 
 
@@ -117,17 +123,16 @@ struct s_txt_engine_font_glyph {
 };
 
 struct s_txt_engine_ctx {
-  i16 cursor_x;
-  i16 cursor_y;
-  TextEngine_Font_t *current_font;
-  u8 *char_lookup_table;
-  u16 *pal;
+  TextEngine_TextSurface_t surface;
+  const TextEngine_Font_t *current_font;
+  TextEngine_Font_t **font_registry;
+  const char **predef_string_table;
+  u32 font_registry_size;
+  u32 prdef_string_table_size;
   u32 flags;
-  u16 margins[4];
   TextEngine_GlyphRender_cb glyph_render_cb;
   TextEngine_ClearRender_cb clear_render_cb;
   void *userdata;
-  const char **predef_string_table;
 };
 
 
@@ -153,23 +158,9 @@ __attribute__ ((__format__ ( __printf__, 2, 3 ) ))
 int TextEngine_Printf(TextEngine_Ctx_t *ctx, const char *__restrict fmt,
     ...);
 
-IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
-                                                const TextEngine_Font_Glyph_t*,
-                                                Coord_t*,
-                                                u16*,
-                                                const u16*,
-                                                void*);
-IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
-                                                const TextEngine_Font_Glyph_t*,
-                                                Coord_t*,
-                                                u16*,
-                                                const u16*,
-                                                void*);
+int TextEngine_Puts(const char *__restrict s, TextEngine_Ctx_t *ctx);
+int TextEngine_Putchar(u32 c, TextEngine_Ctx_t *ctx);
 
-IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t*,
-                                                        void*);
-IWRAM_CODE void TextEngine_DefaultClearCallback_BMP(const Rect_t*,
-                                                      void*);
 
 #ifdef __cplusplus
 }

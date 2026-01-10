@@ -284,12 +284,14 @@ typedef struct bg_screen_entry_fields {
   BOOL vflip : 1;
   u32 pal4_bank : 4;
   
-}BG_ScreenEntry_Fields_t;
+} PACKED BG_ScreenEntry_Fields_t;
 
 typedef union u_bg_screen_entry {
   BG_ScreenEntry_Fields_t fields;
   u16 raw;
 } BG_ScreenEntry_t;
+static_assert(2==sizeof(BG_ScreenEntry_Fields_t));
+static_assert(2==sizeof(BG_ScreenEntry_t));
 
 typedef u16 ScreenBlock_t[1024];
 #ifdef __cplusplus

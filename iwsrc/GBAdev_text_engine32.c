@@ -4,9 +4,7 @@
 #include <GBAdev_text_engine.h>
 #include <GBAdev_math.h>
 #include "GBAdev_text_engine_private.h"
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <sys/cdefs.h>
 typedef enum e_txt_engine_escape_seq_type {
   ESCAPE_SEQUENCE_X_COORD=0,
   ESCAPE_SEQUENCE_Y_COORD,
@@ -18,336 +16,31 @@ typedef enum e_txt_engine_escape_seq_type {
 } TextEngine_EscapeSequence_Type_e;
 
 
-IWRAM_CODE BOOL __GBADEV_INTERNAL__TextEngine_ProcessEscapeChars(
-                                                      TextEngine_Ctx_t *ctx,
-                                                      Coord_t *cursor,
-                                                      const char **iostr) {
-  const char *str = *iostr, *tmp_strp;
-  char *endp;
-  u32 cur, arg;
-  i32 bracket_pda = 0;
-  BOOL brackets_encountered;
-  if ('[' != *str++)
-    return FALSE;
-
-  cur = *str++;
-  do {
-    if ('$'!=cur)
-      return FALSE;
-    bracket_pda = 0;
-    brackets_encountered = FALSE;
-    for (tmp_strp=str, cur=*tmp_strp++; '\0'!=cur && '='!=cur; cur=*tmp_strp++)
-      switch (cur) {
-      case '[':
-        ++bracket_pda;
-        brackets_encountered = TRUE;
-        continue;
-      case ']':
-        if (0 == bracket_pda)
-          return FALSE;
-        --bracket_pda;
-        continue;
-      default:
-        continue;
-      }
-    if ('=' != cur)
-      return FALSE;
-    if (0!=bracket_pda)
-      return FALSE;
-    if (brackets_encountered) {
-      if (!isdigit(*tmp_strp))
-        return FALSE;
-      if (0!=strncmp(str, "pal[", LSTRLEN("pal[")))
-        return FALSE;
-      str+=LSTRLEN("pal[");
-      if ('['!=*str++)
-        return FALSE;
-      cur = *str;
-      if (!isdigit(cur))
-        return FALSE;
-      if ('0' == cur) {
-        cur = *++str;
-        if (']' == cur) {
-          cur = 0;
-        } else if ('x' == cur) {
-          cur = 16;
-          ++str;
-        } else {
-          while ('0'==cur)
-            cur = *++str;
-          if (!isdigit(cur))
-            return FALSE;
-          if ('8' == cur || '9' == cur)
-            return FALSE;
-          cur = 8;
-        }
-      } else {
-        cur = 10;
-      }
-      if (0!=cur) {
-        cur = strtoul(str, &endp, cur);
-        if (NULL == endp || endp == str) {
-          return FALSE;
-        }
-        str = endp;
-        if (*str != ']')
-          return FALSE;
-      }
-      if ('0' == *tmp_strp) {
-        if ('x' == *++tmp_strp) {
-          ++tmp_strp;
-          arg = strtoul(tmp_strp, &endp, 16);
-        } else {
-          for (arg = *tmp_strp; '0'==arg; arg = *++tmp_strp) continue;
-          if (!isdigit(arg))
-            return FALSE;
-          if ('8' == arg || '9' == arg)
-            return FALSE;
-          arg = strtoul(tmp_strp, &endp, 8);
-        }
-      } else {
-        arg = strtoul(tmp_strp, &endp, 10);
-      }
-      if (NULL == endp || endp == tmp_strp)
-        return FALSE;
-      ctx->pal[cur] = arg;
-      str = endp;
-      cur = *str++;
-      continue;
-    }
-    cur = *str++;
-    if ('x' <= cur) {
-      if ('=' == *str) {
-        switch (cur) {
-        case 'x':
-          arg = ESCAPE_SEQUENCE_X_COORD;
-          break;
-        case 'y':
-          arg = ESCAPE_SEQUENCE_Y_COORD;
-          break;
-        default:
-          return FALSE;
-        }
-      } else {
-        if ('x' != cur)
-          return FALSE;
-        if (0!=strncmp(str, "y=", LSTRLEN("y=")))
-          return FALSE;
-        arg = ESCAPE_SEQUENCE_PAIR_COORD;
-      }
-    } else if ('g'==*str) {
-      switch (cur) {
-      case 'f':
-        arg = ESCAPE_SEQUENCE_FG_SET;
-        break;
-      case 'b':
-        arg = ESCAPE_SEQUENCE_BG_SET;
-        break;
-      default:
-        return FALSE;
-      }
-    } else {
-      return FALSE;
-    }
-    if ('0' == *tmp_strp) {
-      if ('x' == *++tmp_strp) {
-        ++tmp_strp;
-        cur = strtoul(tmp_strp, &endp, 16);
-      } else {
-        for (cur = *tmp_strp; '0'==cur; cur = *++tmp_strp) continue;
-        if (!isdigit(cur))
-          return FALSE;
-        if ('8' == cur || '9' == cur)
-          return FALSE;
-        cur = strtoul(tmp_strp, &endp, 8);
-      }
-    } else {
-      cur = strtoul(tmp_strp, &endp, 10);
-    }
-    if (NULL == endp || endp == tmp_strp)
-      return FALSE;
-    str = endp;
-    switch (arg) {
-    case ESCAPE_SEQUENCE_X_COORD:
-      ctx->cursor_x = cur;
-      cur = *str++;
-      continue;
-    case ESCAPE_SEQUENCE_Y_COORD:
-      ctx->cursor_y = cur;
-      cur = *str++;
-      continue;
-    case ESCAPE_SEQUENCE_FG_SET:
-      ctx->pal[1] = cur;
-      cur = *str++;
-      continue;
-    case ESCAPE_SEQUENCE_BG_SET:
-      ctx->pal[0] = cur;
-      cur = *str++;
-      continue;
-    case ESCAPE_SEQUENCE_PAIR_COORD:
-      ctx->cursor_x = cur;
-      break;
-    }
-    tmp_strp = endp;
-    if ('0' == *tmp_strp) {
-      if ('x' == *++tmp_strp) {
-        ++tmp_strp;
-        cur = strtoul(tmp_strp, &endp, 16);
-      } else {
-        for (cur = *tmp_strp; '0'==cur; cur = *++tmp_strp) continue;
-        if (!isdigit(cur))
-          return FALSE;
-        if ('8' == cur || '9' == cur)
-          return FALSE;
-        cur = strtoul(tmp_strp, &endp, 8);
-      }
-    } else {
-      cur = strtoul(tmp_strp, &endp, 10);
-    }
-    if (NULL == endp || endp == tmp_strp)
-      return FALSE;
-    ctx->cursor_y = cur;
-    str = endp;
-    cur = *str++;
-
-  } while ('\0' != cur && ']' != cur);
-  
-  return ']' == cur;
-}
-
 
 #ifdef __DEFAULT_CALLBACK_TILEMAP_ASM_VERSIONS_UNIMPLEMENTED__
 
 
-#if 0  // Block off old implementation that failed as I forgot about how
-       // MEM_VRAM databus doesn't allow byte-level write ops. Trying to write
-       // ((u8*)MEM_VRAM)[0] = (u8)foo;
-       // results in the following effectively happening to the memory:
-       // ((u16*)MEM_VRAM)[0] = (u16)foo|((u16)foo<<8)
-       // Therefore, the solution is to cast dst to u16 and adjust all pointer
-       // indexes to accommodate new ptr type, which is now 2 bytes per index
-       // Fixed implementation is in the #else preprocessor block
+
+
+
 IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
                                     const TextEngine_Font_Glyph_t *glyph_info,
-                                    Coord_t *cursor,
-                                    u16 *pal,
-                                    const u16 *margins,
-                                    void *userdata) {
-  TextEngine_TilemapState_t *state = (TextEngine_TilemapState_t*)userdata;
+                                    TextEngine_TextSurface_t *surface,
+                                    __unused void *userdata) {
+  Coord_t *cursor = &surface->cursor;
   const u32 
-    LFT = margins[TEXT_ENGINE_RENDER_MARGIN_LEFT],
-    TOP = margins[TEXT_ENGINE_RENDER_MARGIN_TOP],
-    RGT = margins[TEXT_ENGINE_RENDER_MARGIN_RIGHT],
-    BTM = margins[TEXT_ENGINE_RENDER_MARGIN_BOTTOM],
+    LFT = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_LEFT],
+    TOP = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_TOP],
+    RGT = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_RIGHT],
+    BTM = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_BOTTOM],
     TXTBOX_W = RGT - LFT,
     TXTBOX_H = BTM - TOP,
     GW = glyph_info->width, 
     GH = glyph_info->height,
+    GBPP = glyph_info->bpp,
     GPITCH = glyph_info->cell_pitch;
-  
-  if ((cursor->x + GW) > TXTBOX_W) {
-    u32 start_y;
-    cursor->x = 0;
-    cursor->y += glyph_info->max_height;
-    start_y = cursor->y + TOP;
-    if ((cursor->y + GH) > TXTBOX_H)
-      return FALSE;
-    state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT, start_y);
-    state->tile_x_ofs = LFT&7, state->tile_y_ofs = start_y&7;
-  } else if ((cursor->y + GH) > TXTBOX_H) {
-    return FALSE;
-  }
-  const u8 *src = (const u8*)glyph_info->data;
-  u8 *basetile, *dst = (u8*)state->surface.sdata;
-  u32 src_y, src_x, dst_x = state->tile_x_ofs, dst_x_base = state->tile_x_ofs,
-      dst_y = state->tile_y_ofs;
-  u32 tile_sz, cur, tile_pitch;
-  BOOL is_8bpp = 0!=(state->surface.type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256),
-       big_endian = glyph_info->bitpack_big_endian;
-  tile_sz = is_8bpp ? 64 : 32;
-  if (is_8bpp)
-    dst += state->cur_tile_idx<<6, tile_pitch = 8;
-  else
-    dst += state->cur_tile_idx<<5, tile_pitch = 4;
-  basetile = dst;
-  for (src_y = 0; GH > src_y; ++src_y, src+=GPITCH) {
-    dst = basetile + dst_y*tile_pitch;
-    for (dst_x = dst_x_base, src_x = 0; GW > src_x; ++src_x) {
-      if (is_8bpp) {
-        if (8 == glyph_info->bpp) {
-          dst[dst_x++] = src[src_x];
-        } else if (4 == glyph_info->bpp) {
-          if ((src_x&1)^big_endian)
-              dst[dst_x++] = (src[src_x>>1]>>4)&0x0F;
-          else
-            dst[dst_x++] = src[src_x>>1]&0x0F;
-        } else {
-          if (big_endian)
-            dst[dst_x++] = src[src_x/8]&(0x80>>(src_x&7)) ? 1 : 0;
-          else
-            dst[dst_x++] = src[src_x/8]&(1<<(src_x&7)) ? 1 : 0;
-        }
-      } else if (dst_x&1) {
-        if (4==glyph_info->bpp) {
-          if (big_endian^(src_x&1))
-            dst[dst_x++>>1] |= src[src_x>>1]&0xF0;
-          else
-            dst[dst_x++>>1] |= (src[src_x>>1]<<4)&0xF0;
-        } else {
-          dst[dst_x++>>1] |= (src[src_x>>3]&(big_endian
-                                    ?0x80>>(src_x&7)
-                                    :1<<(src_x&7))) ? 0x10 : 0;
-        }
-      } else {
-        if (4==glyph_info->bpp) {
-          if (big_endian^(src_x&1))
-            dst[dst_x++>>1] = (src[src_x>>1]>>4)&0x0F;
-          else
-            dst[dst_x++>>1] = src[src_x>>1]&0x0F;
-        } else {
-          dst[dst_x++>>1] = (src[src_x>>3]&(big_endian
-                                    ?0x80>>(src_x&7)
-                                    :1<<(src_x&7))) ? 1 : 0;
-        }
-      }
-      if (8>dst_x)
-        continue;
-      dst_x = 0;
-      dst = basetile+tile_sz+dst_y*tile_pitch;
-    }
-    ++dst_y;
-    if (8>dst_y)
-      continue;
-    dst_y = 0;
-    basetile += is_8bpp ? 30*64 : 30*32;
-  }
-  cursor->x += GW;
-  state->tile_x_ofs = (LFT+cursor->x)&7;
-  state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT+cursor->x,
-                                                         TOP+cursor->y);
-
-  return TRUE;
-}
-#else  // Fixed impl below:
-
-IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
-                                    const TextEngine_Font_Glyph_t *glyph_info,
-                                    Coord_t *cursor,
-                                    u16 *pal,
-                                    const u16 *margins,
-                                    void *userdata) {
-  TextEngine_TilemapState_t *state = (TextEngine_TilemapState_t*)userdata;
-  const u32 
-    LFT = margins[TEXT_ENGINE_RENDER_MARGIN_LEFT],
-    TOP = margins[TEXT_ENGINE_RENDER_MARGIN_TOP],
-    RGT = margins[TEXT_ENGINE_RENDER_MARGIN_RIGHT],
-    BTM = margins[TEXT_ENGINE_RENDER_MARGIN_BOTTOM],
-    TXTBOX_W = RGT - LFT,
-    TXTBOX_H = BTM - TOP,
-    GW = glyph_info->width, 
-    GH = glyph_info->height,
-    GPITCH = glyph_info->cell_pitch;
-  u32 start_x = cursor->x+LFT, start_y = cursor->y+TOP;
+  u32 start_x = cursor->x+LFT, start_y = cursor->y+TOP, cur_tile_idx,
+      tile_x_ofs, tile_y_ofs;
   if ((cursor->x + GW) > TXTBOX_W) {
     cursor->x = 0;
     cursor->y += glyph_info->max_height;
@@ -355,29 +48,126 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
     start_y = cursor->y + TOP;
     if ((cursor->y + GH) > TXTBOX_H)
       return FALSE;
-    state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT, start_y);
-    state->tile_x_ofs = LFT&7;
-    state->tile_y_ofs = start_y&7;
+    cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT, start_y);
+    tile_x_ofs = LFT&7;
+    tile_y_ofs = start_y&7;
   } else if ((cursor->y + GH) > TXTBOX_H) {
     return FALSE;
   } else {
-    state->cur_tile_idx = TilemapState_CalculateCurTileIdx(start_x, start_y);
-    state->tile_x_ofs = start_x&7;
-    state->tile_y_ofs = start_y&7;
+    cur_tile_idx = TilemapState_CalculateCurTileIdx(start_x, start_y);
+    tile_x_ofs = start_x&7;
+    tile_y_ofs = start_y&7;
   }
   const u8 *src = (const u8*)glyph_info->data;
-  u8 *basetile, *dst = (u8*)state->surface.sdata;
-  u32 src_y, src_x, dst_x_base = state->tile_x_ofs,
-      dst_y = state->tile_y_ofs, dst_x;
-  u32 tile_sz, tile_pitch;
-  BOOL is_8bpp = 0!=(state->surface.type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256),
+  const u8 *idxmap = surface->idx_map;
+  u8 *basetile, *dst = (u8*)surface->sdata;
+  BG_ScreenEntry_t *tmap_base = NULL, *tmap_p = NULL, tmap_ent;
+  u32 src_y, src_x, dst_x_base = tile_x_ofs,
+      dst_y = tile_y_ofs, dst_x;
+  u8 cur_palbank = surface->cur_palbank;
+  BOOL is_8bpp = 0!=(surface->type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256),
        big_endian = glyph_info->bitpack_big_endian;
-  tile_sz = is_8bpp ? 64 : 32;
-  if (is_8bpp)
-    dst += state->cur_tile_idx<<6, tile_pitch = 8;
-  else
-    dst += state->cur_tile_idx<<5, tile_pitch = 4;
+  if (is_8bpp) {
+    dst += cur_tile_idx<<6;
+  } else {
+    dst += cur_tile_idx<<5;
+    tmap_base = (BG_ScreenEntry_t*)surface->screen_ent_data
+              + (start_x>>3) + (start_y>>3<<5);
+    tmap_ent = *tmap_base;
+    tmap_ent.fields.pal4_bank = cur_palbank;
+    *tmap_base = tmap_ent;
+  }
   basetile = dst;
+#if 1
+  const u8 *src_scanln;
+  u8 curpx, cur_scanline_byte=0;
+  for (src_y=0; GH>src_y; ++src_y, src+=GPITCH) {
+    if (8 <= dst_y) {
+    dst_y = 0;
+      if (is_8bpp) {
+        basetile += 30<<6;
+      } else {
+        basetile += 30<<5;
+        tmap_base += 32;
+        tmap_ent = *tmap_base;
+        tmap_ent.fields.pal4_bank = cur_palbank;
+        *tmap_base = tmap_ent;
+      }
+    }
+    dst = basetile+(dst_y<<(is_8bpp+2));
+    tmap_p = tmap_base;
+    for (dst_x = dst_x_base, src_x = 0, src_scanln=src; GW > src_x; ++src_x) {
+      switch (GBPP) {
+      case 1:
+        if (0==(7&src_x))
+          cur_scanline_byte = *src_scanln++;
+        curpx = 0!=((big_endian
+                  ? 0x80>>(src_x&7)
+                  : 1<<(src_x&7))&cur_scanline_byte);
+        break;
+      case 4:
+        if (0==(1&src_x))
+          cur_scanline_byte = *src_scanln++;
+        curpx = cur_scanline_byte;
+        if (big_endian^(src_x&1))
+          curpx>>=4;
+        curpx&=0x0F;
+        break;
+      case 8:
+        curpx = *src_scanln++;
+        break;
+      default:
+        return FALSE;
+      }
+      if (NULL!=idxmap) {
+        curpx = idxmap[curpx];
+      }
+      if (is_8bpp) {
+        curpx&=0xFF;
+        if (dst_x&1) {
+          ((u16*)dst)[dst_x>>1] &= 0x00FF;
+          ((u16*)dst)[dst_x++>>1] |= curpx<<8;
+        } else {
+          ((u16*)dst)[dst_x>>1] &= 0xFF00;
+          ((u16*)dst)[dst_x++>>1] |= curpx;
+        }
+      } else {
+        curpx&=0x0F;
+        if (dst_x&2) {
+          if (dst_x&1) {
+            ((u16*)dst)[dst_x>>2] &= 0x0FFF;
+            ((u16*)dst)[dst_x++>>2] |= curpx<<12;
+          } else {
+            ((u16*)dst)[dst_x>>2] &= 0xF0FF;
+            ((u16*)dst)[dst_x++>>2] |= curpx<<8;
+          }
+        } else if (dst_x&1) {
+          ((u16*)dst)[dst_x>>2] &= 0xFF0F;
+          ((u16*)dst)[dst_x++>>2] |= curpx<<4;
+        } else {
+          ((u16*)dst)[dst_x>>2] &= 0xFFF0;
+          ((u16*)dst)[dst_x++>>2] |= curpx;
+        }
+      }
+      if (8>dst_x)
+        continue;
+      if ((src_x+1)>=GW)
+        break;
+      dst_x = 0;
+      if (is_8bpp) {
+        dst += 64;
+      } else {
+        dst += 32;
+        tmap_ent = *++tmap_p;
+        tmap_ent.fields.pal4_bank = cur_palbank;
+        *tmap_p = tmap_ent;
+      }
+    }
+    ++dst_y;
+  }
+  cursor->x += GW;
+  return TRUE;
+#else
   for (src_y = 0; GH > src_y; ++src_y, src+=GPITCH) {
     dst = basetile + dst_y*tile_pitch;
     for (dst_x = dst_x_base, src_x = 0; GW > src_x; ++src_x) {
@@ -511,30 +301,53 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
     basetile += is_8bpp ? 30*64 : 30*32;
   }
   cursor->x += GW;
-  state->tile_x_ofs = (LFT+cursor->x)&7;
-  state->cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT+cursor->x,
+  tile_x_ofs = (LFT+cursor->x)&7;
+  cur_tile_idx = TilemapState_CalculateCurTileIdx(LFT+cursor->x,
                                                          TOP+cursor->y);
 
   return TRUE;
+#endif
 }
 
-#endif  /* tmp block for fixed Tilemap Render CB's fixed impl */
 
-IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
-                                                        void *userdata) {
-  TextEngine_TilemapState_t *state = (TextEngine_TilemapState_t*)userdata;
-  u8 *basetile = state->surface.sdata, *curtile;
+IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(
+                                            const Rect_t *area,
+                                            TextEngine_TextSurface_t *surface,
+                                            __unused void *userdata) {
+  u8 *basetile = surface->sdata, *curtile;
+  BG_ScreenEntry_t *tmap_base=NULL, *tmap_p=NULL, tmap_ent;
+  u8 cur_palbank = surface->cur_palbank;
   BOOL is_8bpp;
-  is_8bpp = 0!=(state->surface.type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256);
-  if (is_8bpp)
+  is_8bpp = 0!=(surface->type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256);
+  if (is_8bpp) {
     basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<6;
-  else
-   basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<5;
-  const u32 W = area->w, H = area->h, TSZ = is_8bpp ? 64 : 32,
-        TPITCH = is_8bpp ? 8 : 4;
+  } else {
+    basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<5;
+    tmap_base = (BG_ScreenEntry_t*)surface->screen_ent_data 
+              + (area->x>>3) + (area->x>>3<<5);
+    tmap_ent = *tmap_base;
+    tmap_ent.fields.pal4_bank = surface->cur_palbank;
+    *tmap_base = tmap_ent;
+  }
+  const u32 W = area->w, H = area->h;
   u32 dst_x_base = area->x&7, dst_y = area->y&7, dst_x, rx=0, ry=0;
   for (ry = 0; H > ry; ++ry) {
-    curtile = basetile+dst_y*TPITCH;
+    curtile = basetile+(dst_y<<(2+is_8bpp));
+    if (8 <= dst_y) {
+      dst_y = 0;
+      if (is_8bpp) {
+        basetile += 30<<6;
+      } else {
+        basetile += 30<<5;
+        tmap_base += 32;
+        tmap_ent = *tmap_base;
+        tmap_ent.fields.pal4_bank = cur_palbank;
+        *tmap_base = tmap_ent;
+        tmap_p = tmap_base;
+      }
+    } else {
+      tmap_p = tmap_base;
+    }
     for (dst_x = dst_x_base, rx = 0; W > rx; ++rx) {
       if (is_8bpp) {
         if (dst_x&1) {
@@ -557,13 +370,19 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
       }
       if (8 > dst_x)
         continue;
+      if ((rx+1)>=W)
+        break;
       dst_x = 0;
-      curtile = basetile+TSZ+dst_y*TPITCH;
+      if (is_8bpp) {
+        curtile += 64;
+      } else {
+        curtile += 32;
+        tmap_ent = *++tmap_p;
+        tmap_ent.fields.pal4_bank = cur_palbank;
+        *tmap_p = tmap_ent;
+      }
     }
-    if (8>++dst_y)
-      continue;
-    dst_y = 0;
-    basetile += is_8bpp ? 30*64 : 30*32;
+    ++dst_y;
   }
 }
 
@@ -578,28 +397,26 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(const Rect_t *area,
 // Stub
 IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
                                     const TextEngine_Font_Glyph_t *glyph_info,
-                                    Coord_t *cursor,
-                                    u16 *pal,
-                                    const u16 *margins,
-                                    void *userdata) {
-  TextEngine_TextSurface_t *surf = (TextEngine_TextSurface_t*)userdata;
-  u16 *cur_scanline = surf->sdata, *writep;
-  u16 *surf_pal = surf->pal;
+                                    TextEngine_TextSurface_t *surface,
+                                    __unused void *userdata) {
+  u16 *cur_scanline = surface->sdata, *writep;
+  u16 *surf_pal = surface->pal;
+  Coord_t *cursor = &surface->cursor;
   const u8 *gdata = glyph_info->data;
-  u32 LFT = margins[TEXT_ENGINE_RENDER_MARGIN_LEFT],
-      TOP = margins[TEXT_ENGINE_RENDER_MARGIN_TOP],
-      RGT = margins[TEXT_ENGINE_RENDER_MARGIN_RIGHT],
-      BTM = margins[TEXT_ENGINE_RENDER_MARGIN_BOTTOM],
+  u32 LFT = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_LEFT],
+      TOP = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_TOP],
+      RGT = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_RIGHT],
+      BTM = surface->margins[TEXT_ENGINE_TEXT_SURFACE_MARGIN_BOTTOM],
       TBOX_W = RGT-LFT,
       TBOX_H = BTM-TOP,
       GW = glyph_info->width,
       GH = glyph_info->height,
       GPITCH = glyph_info->cell_pitch,
-      PITCH = surf->pitch,
+      PITCH = surface->pitch,
       GBPP = glyph_info->bpp;
 
   u32 start_x=cursor->x, start_y=cursor->y, gpixel;
-  BOOL is_16bpp = surf->type & TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555,
+  BOOL is_16bpp = surface->type & TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555,
        big_endian = glyph_info->bitpack_big_endian;
   {
     BOOL write_box_ovf = FALSE;
@@ -618,13 +435,13 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
       start_x = LFT+cursor->x, start_y = cursor->y + TOP;
     }
     if (write_box_ovf) {
-      if (surf->type&TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED &&
-          surf->flags&TEXT_ENGINE_TEXT_SURFACE_PAGE_FLIP_ON_TEXTBOX_OVERFLOW) {
-        UIPTR_T newpage = (UIPTR_T)surf->sdata;
-        if (TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE5==surf->type) {
-          surf->sdata = (void*)(newpage^M5_PAGE_SIZE);
+      if (surface->type&TEXT_ENGINE_TEXT_SURFACE_DOUBLE_BUFFERED &&
+          surface->flags&TEXT_ENGINE_TEXT_SURFACE_PAGE_FLIP_ON_TEXTBOX_OVERFLOW) {
+        UIPTR_T newpage = (UIPTR_T)surface->sdata;
+        if (TEXT_ENGINE_TEXT_SURFACE_TYPE_BMP_MODE5==surface->type) {
+          surface->sdata = (void*)(newpage^M5_PAGE_SIZE);
         } else {
-          surf->sdata = (void*)(newpage^M4_PAGE_SIZE);
+          surface->sdata = (void*)(newpage^M4_PAGE_SIZE);
         }
       }
       return FALSE;
@@ -653,6 +470,9 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
         break;
       case 8:
         gpixel = gdata[x];
+        break;
+      default:
+        return FALSE;
       }
       if (is_16bpp) {
         *writep++ = surf_pal[gpixel];
@@ -672,13 +492,14 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_BMP(
 }
 
 // Stub
-IWRAM_CODE void TextEngine_DefaultClearCallback_BMP(const Rect_t *bounds,
-                                                      void *udata) {
-  TextEngine_TextSurface_t *surf = (TextEngine_TextSurface_t*)udata;
-  const u32 PITCH = surf->pitch, BW=bounds->w, BH = bounds->h,
+IWRAM_CODE void TextEngine_DefaultClearCallback_BMP(
+                                            const Rect_t *bounds,
+                                            TextEngine_TextSurface_t *surface,
+                                            __unused void *userdata) {
+  const u32 PITCH = surface->pitch, BW=bounds->w, BH = bounds->h,
         START_X = bounds->x;
-  u16 *cur_scanline = surf->sdata, *writep;
-  BOOL is_16bpp = surf->type&TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555;
+  u16 *cur_scanline = surface->sdata, *writep;
+  BOOL is_16bpp = surface->type&TEXT_ENGINE_TEXT_SURFACE_RAWXBGR1555;
   if (is_16bpp)
     cur_scanline += bounds->x + bounds->y*PITCH;
   else
