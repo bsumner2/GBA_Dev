@@ -125,10 +125,10 @@ struct s_txt_engine_font_glyph {
 struct s_txt_engine_ctx {
   TextEngine_TextSurface_t surface;
   const TextEngine_Font_t *current_font;
-  TextEngine_Font_t **font_registry;
+  const TextEngine_Font_t **font_registry;
   const char **predef_string_table;
   u32 font_registry_size;
-  u32 prdef_string_table_size;
+  u32 predef_string_table_size;
   u32 flags;
   TextEngine_GlyphRender_cb glyph_render_cb;
   TextEngine_ClearRender_cb clear_render_cb;

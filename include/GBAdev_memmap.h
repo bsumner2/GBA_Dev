@@ -137,7 +137,8 @@ extern "C" {
 
 
 
-#define OAM_ATTR                  ((Obj_Attr_t*) (MEM_OAM))
+#define OAM_ATTR                  ((Obj_Attr_u*) (MEM_OAM))
+#define OAM_ATTR_RAW              ((u64*) (MEM_OAM))
 #define OAM_AFFINE                ((Obj_Affine_Transform_t*) (MEM_OAM))
 
 
@@ -157,7 +158,11 @@ extern "C" {
 
 
 #define PAL_MEM_BG                ((u16*) (MEM_PAL))
+#define PAL256_MEM_BG             ((u16*) (MEM_PAL))
+#define PAL16_MEM_BG              ((u16(*)[16]) (MEM_PAL))
 #define PAL_MEM_OBJ               ((u16*) (MEM_PAL + PAL_BG_SIZE))
+#define PAL256_MEM_OBJ            ((u16*) (MEM_PAL + PAL_BG_SIZE))
+#define PAL16_MEM_OBJ             ((u16(*)[16]) (MEM_PAL + PAL_BG_SIZE))
 
 #define SCR_ENT_MEM               ((ScreenBlock_t*) (MEM_VRAM))
 

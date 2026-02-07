@@ -61,20 +61,23 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
   const u8 *src = (const u8*)glyph_info->data;
   const u8 *idxmap = surface->idx_map;
   u8 *basetile, *dst = (u8*)surface->sdata;
-  BG_ScreenEntry_t *tmap_base = NULL, *tmap_p = NULL, tmap_ent;
+  u16 *tmap_base = NULL, *tmap_p = NULL, tmap_ent;
   u32 src_y, src_x, dst_x_base = tile_x_ofs,
       dst_y = tile_y_ofs, dst_x;
-  u8 cur_palbank = surface->cur_palbank;
+  const u16 CUR_PALBANK = REG_VALUE(SCREEN_ENTRY,
+                                   PALBANK_IDX,
+                                   (u16)surface->cur_palbank);
   BOOL is_8bpp = 0!=(surface->type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256),
        big_endian = glyph_info->bitpack_big_endian;
   if (is_8bpp) {
     dst += cur_tile_idx<<6;
   } else {
     dst += cur_tile_idx<<5;
-    tmap_base = (BG_ScreenEntry_t*)surface->screen_ent_data
+    tmap_base = (u16*)surface->screen_ent_data
               + (start_x>>3) + (start_y>>3<<5);
     tmap_ent = *tmap_base;
-    tmap_ent.fields.pal4_bank = cur_palbank;
+    tmap_ent&=REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+    tmap_ent|=CUR_PALBANK;
     *tmap_base = tmap_ent;
   }
   basetile = dst;
@@ -90,7 +93,8 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
         basetile += 30<<5;
         tmap_base += 32;
         tmap_ent = *tmap_base;
-        tmap_ent.fields.pal4_bank = cur_palbank;
+        tmap_ent &= REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+        tmap_ent |= CUR_PALBANK;
         *tmap_base = tmap_ent;
       }
     }
@@ -159,7 +163,8 @@ IWRAM_CODE BOOL TextEngine_DefaultRenderCallback_Tilemap(
       } else {
         dst += 32;
         tmap_ent = *++tmap_p;
-        tmap_ent.fields.pal4_bank = cur_palbank;
+        tmap_ent&=REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+        tmap_ent|=CUR_PALBANK;
         *tmap_p = tmap_ent;
       }
     }
@@ -315,18 +320,20 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(
                                             TextEngine_TextSurface_t *surface,
                                             __unused void *userdata) {
   u8 *basetile = surface->sdata, *curtile;
-  BG_ScreenEntry_t *tmap_base=NULL, *tmap_p=NULL, tmap_ent;
-  u8 cur_palbank = surface->cur_palbank;
+  u16 *tmap_base=NULL, *tmap_p=NULL, tmap_ent;
+  const u16 CUR_PALBANK = REG_VALUE(SCREEN_ENTRY, 
+                                   PALBANK_IDX,
+                                   (u16)surface->cur_palbank);
   BOOL is_8bpp;
   is_8bpp = 0!=(surface->type&TEXT_ENGINE_TEXT_SURFACE_INDEXED256);
   if (is_8bpp) {
     basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<6;
   } else {
     basetile += TilemapState_CalculateCurTileIdx(area->x, area->y)<<5;
-    tmap_base = (BG_ScreenEntry_t*)surface->screen_ent_data 
-              + (area->x>>3) + (area->x>>3<<5);
+    tmap_base = (u16*)surface->screen_ent_data + (area->x>>3) + (area->y>>3<<5);
     tmap_ent = *tmap_base;
-    tmap_ent.fields.pal4_bank = surface->cur_palbank;
+    tmap_ent &= REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+    tmap_ent |= CUR_PALBANK;
     *tmap_base = tmap_ent;
   }
   const u32 W = area->w, H = area->h;
@@ -341,11 +348,12 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(
         basetile += 30<<5;
         tmap_base += 32;
         tmap_ent = *tmap_base;
-        tmap_ent.fields.pal4_bank = cur_palbank;
+        tmap_ent &= REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+        tmap_ent |= CUR_PALBANK;
         *tmap_base = tmap_ent;
         tmap_p = tmap_base;
       }
-    } else {
+    } else if (!is_8bpp) {
       tmap_p = tmap_base;
     }
     for (dst_x = dst_x_base, rx = 0; W > rx; ++rx) {
@@ -378,7 +386,8 @@ IWRAM_CODE void TextEngine_DefaultClearCallback_Tilemap(
       } else {
         curtile += 32;
         tmap_ent = *++tmap_p;
-        tmap_ent.fields.pal4_bank = cur_palbank;
+        tmap_ent &= REG_FIELD_RESET_MASK(SCREEN_ENTRY, PALBANK_IDX);
+        tmap_ent |= CUR_PALBANK;
         *tmap_p = tmap_ent;
       }
     }

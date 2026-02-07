@@ -104,6 +104,78 @@ extern "C" {
 #define DPY_STAT_VCOUNT_IRQ_FLAGBIT   0x0020
 #define DPY_STAT_VCOUNT_MASK          0xFF00
 
+/* OAM Attributes */
+#define OBJ_ATTR_REGULAR_Y_MASK                       0x00000000000000FFULL
+#define OBJ_ATTR_REGULAR_AFFINE_TOGGLE_FLAGBIT        0x0000000000000100ULL
+#define OBJ_ATTR_REGULAR_DISABLE_FLAGBIT              0x0000000000000200ULL
+#define OBJ_ATTR_REGULAR_GRAPHICS_MODE_MASK           0x0000000000000C00ULL
+#define OBJ_ATTR_REGULAR_MOSAIC_FLAGBIT               0x0000000000001000ULL
+#define OBJ_ATTR_REGULAR_PAL_8BPP_FLAGBIT             0x0000000000002000ULL
+#define OBJ_ATTR_REGULAR_SHAPE_MASK                   0x000000000000C000ULL
+#define OBJ_ATTR_REGULAR_X_MASK                       0x0000000001FF0000ULL
+#define OBJ_ATTR_REGULAR_HFLIP_FLAGBIT                0x0000000010000000ULL
+#define OBJ_ATTR_REGULAR_VFLIP_FLAGBIT                0x0000000020000000ULL
+#define OBJ_ATTR_REGULAR_SIZE_MASK                    0x00000000C0000000ULL
+#define OBJ_ATTR_REGULAR_SPRITE_IDX_MASK              0x000003FF00000000ULL
+#define OBJ_ATTR_REGULAR_PRIORITY_MASK                0x00000C0000000000ULL
+#define OBJ_ATTR_REGULAR_PAL16_BANK_MASK              0x0000F00000000000ULL
+
+
+#define OBJ_ATTR_AFFINE_Y_MASK                        0x00000000000000FFULL
+#define OBJ_ATTR_AFFINE_AFFINE_TOGGLE_FLAGBIT         0x0000000000000100ULL
+#define OBJ_ATTR_AFFINE_DOUBLE_SIZE_FLAGBIT           0x0000000000000200ULL
+#define OBJ_ATTR_AFFINE_GRAPHICS_MODE_MASK            0x0000000000000C00ULL
+#define OBJ_ATTR_AFFINE_MOSAIC_FLAGBIT                0x0000000000001000ULL
+#define OBJ_ATTR_AFFINE_PAL_8BPP_FLAGBIT              0x0000000000002000ULL
+#define OBJ_ATTR_AFFINE_SHAPE_MASK                    0x000000000000C000ULL
+#define OBJ_ATTR_AFFINE_X_MASK                        0x0000000001FF0000ULL
+#define OBJ_ATTR_AFFINE_TRANSFORM_IDX_MASK            0x000000003E000000ULL
+#define OBJ_ATTR_AFFINE_SIZE_MASK                     0x00000000C0000000ULL
+#define OBJ_ATTR_AFFINE_SPRITE_IDX_MASK               0x000003FF00000000ULL
+#define OBJ_ATTR_AFFINE_PRIORITY_MASK                 0x00000C0000000000ULL
+#define OBJ_ATTR_AFFINE_PAL16_BANK_MASK               0x0000F00000000000ULL
+
+
+#define OBJ_ATTR_REGULAR_Y_SHAMT                      0
+#define OBJ_ATTR_REGULAR_GRAPHICS_MODE_SHAMT          10
+#define OBJ_ATTR_REGULAR_SHAPE_SHAMT                  14
+#define OBJ_ATTR_REGULAR_X_SHAMT                      16
+#define OBJ_ATTR_REGULAR_SIZE_SHAMT                   30
+#define OBJ_ATTR_REGULAR_SPRITE_IDX_SHAMT             32
+#define OBJ_ATTR_REGULAR_PRIORITY_SHAMT               42
+#define OBJ_ATTR_REGULAR_PAL16_BANK_SHAMT             44
+
+#define OBJ_ATTR_AFFINE_Y_SHAMT                       0
+#define OBJ_ATTR_AFFINE_GRAPHICS_MODE_SHAMT           10
+#define OBJ_ATTR_AFFINE_SHAPE_SHAMT                   14
+#define OBJ_ATTR_AFFINE_X_SHAMT                       16
+#define OBJ_ATTR_AFFINE_TRANSFORM_IDX_SHAMT           25
+#define OBJ_ATTR_AFFINE_SIZE_SHAMT                    30
+#define OBJ_ATTR_AFFINE_SPRITE_IDX_SHAMT              32
+#define OBJ_ATTR_AFFINE_PRIORITY_SHAMT                42
+#define OBJ_ATTR_AFFINE_PAL16_BANK_SHAMT              44
+
+static_assert(OBJ_ATTR_REGULAR_Y_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_Y_MASK));
+static_assert(OBJ_ATTR_REGULAR_GRAPHICS_MODE_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_GRAPHICS_MODE_MASK));
+static_assert(OBJ_ATTR_REGULAR_SHAPE_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_SHAPE_MASK));
+static_assert(OBJ_ATTR_REGULAR_X_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_X_MASK));
+static_assert(OBJ_ATTR_REGULAR_SIZE_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_SIZE_MASK));
+static_assert(OBJ_ATTR_REGULAR_SPRITE_IDX_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_SPRITE_IDX_MASK));
+static_assert(OBJ_ATTR_REGULAR_PRIORITY_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_PRIORITY_MASK));
+static_assert(OBJ_ATTR_REGULAR_PAL16_BANK_SHAMT==__builtin_ctzll(OBJ_ATTR_REGULAR_PAL16_BANK_MASK));
+
+static_assert(OBJ_ATTR_AFFINE_Y_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_Y_MASK));
+static_assert(OBJ_ATTR_AFFINE_GRAPHICS_MODE_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_GRAPHICS_MODE_MASK));
+static_assert(OBJ_ATTR_AFFINE_SHAPE_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_SHAPE_MASK));
+static_assert(OBJ_ATTR_AFFINE_X_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_X_MASK));
+static_assert(OBJ_ATTR_AFFINE_TRANSFORM_IDX_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_TRANSFORM_IDX_MASK));
+static_assert(OBJ_ATTR_AFFINE_SIZE_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_SIZE_MASK));
+static_assert(OBJ_ATTR_AFFINE_SPRITE_IDX_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_SPRITE_IDX_MASK));
+static_assert(OBJ_ATTR_AFFINE_PRIORITY_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_PRIORITY_MASK));
+static_assert(OBJ_ATTR_AFFINE_PAL16_BANK_SHAMT==__builtin_ctzll(OBJ_ATTR_AFFINE_PAL16_BANK_MASK));
+
+
+
 /* Background control reg fields */
 #define BG_CNT_PRIORITY_MASK          0x0003
 #define BG_CNT_TILE_BLOCK_BASE_MASK   0x000C
@@ -117,6 +189,14 @@ extern "C" {
 #define BG_CNT_TILE_BLOCK_BASE_SHAMT  2
 #define BG_CNT_SCR_BLOCK_BASE_SHAMT   8
 #define BG_CNT_BG_SIZE_SHAMT          14
+
+#define SCREEN_ENTRY_TILE_IDX_MASK      0x03FF
+#define SCREEN_ENTRY_HFLIP_FLAGBIT      0x0400
+#define SCREEN_ENTRY_VFLIP_FLAGBIT      0x0800
+#define SCREEN_ENTRY_PALBANK_IDX_MASK   0xF000
+
+#define SCREEN_ENTRY_TILE_IDX_SHAMT     0
+#define SCREEN_ENTRY_PALBANK_IDX_SHAMT  12
 
 /* BLEND control and param registers */
 #define BLEND_CNT_LAYER_A_BG0_FLAGBIT       0x0001
@@ -294,6 +374,9 @@ extern "C" {
 #define REG_GET_FLAG(register_value, register_name, flag_name)  \
   ((BOOL) (((register_value) & register_name##_##flag_name##_FLAGBIT)!=0))
 
+
+
+
 #if __STDC_VERSION__==202311L
 #define REG_FLAG_RESET_MASK(regname, flagname) (~REG_FLAG(regname, flagname))
 #define REG_FLAGS_RESET_MASK(regname, flag1name, ...)  \
@@ -302,11 +385,50 @@ extern "C" {
   (~REG_FIELD_MASK(regname, fieldname))
 #define REG_FIELDS_RESET_MASK(regname, fieldname1, ...)  \
   (~REG_FIELD_MASKS(regname, fieldname1, __VA_ARGS__))
+#define OBJ_ATTR_FLAG_RESET_MASK(affine_or_regular, flagname)  \
+  (~OBJ_ATTR_FLAG(affine_or_regular, flagname))
+#define OBJ_ATTR_FLAGS_RESET_MASK(affine_or_regular, flagname0, ...)  \
+  (~OBJ_ATTR_FLAGS(affine_or_regular, flagname0, __VA_ARGS__))
+#define OBJ_ATTR_FIELD_RESET_MASK(affine_or_regular, fieldname)  \
+  (~OBJ_ATTR_FIELD_MASK(affine_or_regular, fieldname))
+#define OBJ_ATTR_FIELDS_RESET_MASK(affine_or_regular, fieldname0, ...)  \
+  (~OBJ_ATTR_FIELD_MASKS(affine_or_regular, fieldname0, __VA_ARGS__))
+
 #define REG_FLAG(regname, flagname) REG_FLAGS(regname, flagname)
 #define REG_FIELD_MASK(regname, fieldname) REG_FIELD_MASKS(regname, fieldname)
 #define REG_VALUE(regname, fieldname, value) REG_VALUES(regname, fieldname, value)
 #define IRQ_FLAG(type) IRQ_FLAGS(type)
 #define KEY_FLAG(key) KEY_FLAGS(key)
+#define OBJ_ATTR_FLAG(affine_or_regular, flagname)  \
+  OBJ_ATTR_FLAGS(affine_or_regular, flagname)
+#define OBJ_ATTR_VALUE(affine_or_regular, fieldname, value)  \
+  OBJ_ATTR_VALUES(affine_or_regular, fieldname, value)
+#define OBJ_ATTR_FIELD_MASK(affine_or_regular, fieldname)  \
+  OBJ_ATTR_FIELD_MASKS(affine_or_regular, fieldname)
+
+
+#define OBJ_ATTR_FIELD_MASKS(affine_or_regular,  \
+                        attr_fieldname0,  \
+                        ...)  \
+  (OBJ_ATTR_##affine_or_regular##_##attr_fieldname0##_MASK __VA_OPT__ (  \
+    | __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__OATTR_FIELDS_VA_FOLD(  \
+      affine_or_regular, __VA_ARGS__))))
+
+
+#define OBJ_ATTR_VALUES(affine_or_regular,  \
+                        attr_fieldname0,  \
+                        attr_value0, ...)  \
+  ((OBJ_ATTR_##affine_or_regular##_##attr_fieldname0##_MASK &  \
+    (((u64)(attr_value0))  \
+   <<OBJ_ATTR_##affine_or_regular##_##attr_fieldname0##_SHAMT)) __VA_OPT__ (  \
+     | __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__OATTR_VALUES_VA_FOLD(  \
+         affine_or_regular, __VA_ARGS__))))
+
+
+#define OBJ_ATTR_FLAGS(affine_or_regular, attr_flagname0, ...)  \
+  (OBJ_ATTR_##affine_or_regular##_##attr_flagname0##_FLAGBIT __VA_OPT__ (  \
+    | __GBADEV_INTERNAL__EXP(__GBADEV_INTERNAL__OATTR_FLAGS_VA_FOLD(  \
+        affine_or_regular, __VA_ARGS__))))
 
 #define REG_FLAGS(regname, flagname0, ...)  \
   (regname##_##flagname0##_FLAGBIT __VA_OPT__ (  \
@@ -354,6 +476,15 @@ extern "C" {
   (regname##_##fieldname##_MASK&((value)<<regname##_##fieldname##_SHAMT))
 #define KEY_FLAG(key) KEY_##key
 #define IRQ_FLAG(type) (1<<IRQ_##type)
+
+#define OBJ_ATTR_FLAG(affine_or_regular, attr_flagname)  \
+  (OBJ_ATTR_##affine_or_regular##_##attr_flagname##_FLAGBIT)
+
+#define OBJ_ATTR_VALUE(affine_or_regular, attr_fieldname, attr_value)  \
+  (OBJ_ATTR_##affine_or_regular##_##attr_fieldname##_MASK &  \
+   (((u64)(attr_value)) <<  \
+    OBJ_ATTR_##affine_or_regular##_##attr_fieldname##_SHAMT))
+
 
 /* KEY_FLAGS and IRQ_FLAGS don't have non-variadic counterparts because typing 
  * the base case is so trivial, it's easier to just type KEY_A instead of 
@@ -441,6 +572,30 @@ extern "C" {
   __VA_OPT__(| __GBADEV_INTERNAL__DSCS_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
       (__VA_ARGS__))
 
+#define __GBADEV_INTERNAL__OATTR_FLAGS_VA_FOLD(affine_or_regular,  \
+                                               attr_flagname_n,  \
+                                               ...)  \
+  OBJ_ATTR_##affine_or_regular##_##attr_flagname_n##_FLAGBIT  \
+  __VA_OPT__(| __GBADEV_INTERNAL__OAFL_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+      (affine_or_regular, __VA_ARGS__))
+
+#define __GBADEV_INTERNAL__OATTR_VALUES_VA_FOLD(affine_or_regular,  \
+                                              attr_fieldname_n,  \
+                                              attr_val_n,  \
+                                              ...)  \
+  (OBJ_ATTR_##affine_or_regular##_##attr_fieldname_n##_MASK &  \
+   (((u64)(attr_val_n))  \
+    <<OBJ_ATTR_##affine_or_regular##_##attr_fieldname_n##_SHAMT))  \
+  __VA_OPT__(| __GBADEV_INTERNAL__OAVS_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+      (affine_or_regular, __VA_ARGS__))
+
+#define __GBADEV_INTERNAL__OATTR_FIELDS_VA_FOLD(affine_or_regular,  \
+                                                attr_fieldname_n,  \
+                                                ...)  \
+  OBJ_ATTR_##affine_or_regular##_##attr_fieldname_n##_MASK  \
+  __VA_OPT__(| __GBADEV_INTERNAL__OAFD_3ARY __GBADEV_INTERNAL__PRNTHSIS  \
+      (affine_or_regular, __VA_ARGS__))
+
 #define __GBADEV_INTERNAL__IFVAF_3ARY() __GBADEV_INTERNAL__IRQFLAGS_VA_FOLD
 #define __GBADEV_INTERNAL__RFVAF_3ARY() __GBADEV_INTERNAL__REGFLAGS_VA_FOLD
 #define __GBADEV_INTERNAL__RFMVAF_3ARY() __GBADEV_INTERNAL__REGFMASKS_VA_FOLD
@@ -448,7 +603,9 @@ extern "C" {
 #define __GBADEV_INTERNAL__KFVAF_3ARY() __GBADEV_INTERNAL__KEYFLAGS_VA_FOLD
 #define __GBADEV_INTERNAL__DMGCHE_3ARY() __GBADEV_INTERNAL__DMGCHANEN_VA_FOLD
 #define __GBADEV_INTERNAL__DSCS_3ARY() __GBADEV_INTERNAL__DSCHANSET_VA_FOLD
-
+#define __GBADEV_INTERNAL__OAFL_3ARY() __GBADEV_INTERNAL__OATTR_FLAGS_VA_FOLD
+#define __GBADEV_INTERNAL__OAVS_3ARY() __GBADEV_INTERNAL__OATTR_VALUES_VA_FOLD
+#define __GBADEV_INTERNAL__OAFD_3ARY() __GBADEV_INTERNAL__OATTR_FIELDS_VA_FOLD
 
 #define __GBADEV_INTERNAL__EXP(...) __GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__GBADEV_INTERNAL__EXP4(__VA_ARGS__))))
 #define __GBADEV_INTERNAL__EXP4(...) __GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__GBADEV_INTERNAL__EXP3(__VA_ARGS__))))

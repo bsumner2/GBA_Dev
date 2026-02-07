@@ -4,36 +4,18 @@
  ********************************************************/
 /*
  * Font Generated Using GBA_FontParser.exe by Burt Sumner (C) 2025
- * Font Name: Verdana
+ * Font Name: GBADev_Verdana_Monochrome
  * Font Glyph Count: 224
  * Font Glyph Cell Dims: 8x16
  * Font Bit Depth: 1
  * Font Pal Color Count: 2
  * Font Generation Date: 02:57AM Tuesday Dec 30th, 2025
  */
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif  /* __cplusplus */
 
-#ifndef _GBADEV_DEFFONT_VERDANA_FONT_PRIV_H_
-#define _GBADEV_DEFFONT_VERDANA_FONT_PRIV_H_
+#include <GBAdev_text_engine.h>
 
 
-#define __GBADEV_INTERNAL__Verdana_Glyph_Data_Len      896U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Data_Size     3584U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Count         224U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Cell_Width    8U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Cell_Height   16U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Cell_Size     16U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Cell_Pitch    1U
-#define __GBADEV_INTERNAL__Verdana_Glyph_Bpp           1U
-#define __GBADEV_INTERNAL__Verdana_Pal_Color_Count     2U
-#define __GBADEV_INTERNAL__Verdana_BitPack_BigEndian   false
-#define __GBADEV_INTERNAL__Verdana_Glyph_Height        12U
-
-
-
-static const unsigned long int __GBADEV_INTERNAL__Verdana_Glyph_Data[896] = {
+const unsigned long int GBADev_Verdana_Monochrome_Glyph_Data[896] = {
   0x00000000, 0x00000000, 0x00000000, 0xCDCDCDCD, 0x01000000, 0x01010101, 0x00000100, 0xCDCDCDCD,
   0x05050000, 0x00000005, 0x00000000, 0xCDCDCDCD, 0x00000000, 0x1F0A1F0A, 0x0000000A, 0xCDCDCDCD,
   0x04040000, 0x0C06051E, 0x04040F14, 0xCDCDCDCD, 0x22000000, 0x542A1515, 0x00002254, 0xCDCDCDCD,
@@ -147,12 +129,11 @@ static const unsigned long int __GBADEV_INTERNAL__Verdana_Glyph_Data[896] = {
   0x09000000, 0x09090900, 0x00000E09, 0xCDCDCDCD, 0x04080000, 0x09090900, 0x02020406, 0xCDCDCDCD,
   0x01010000, 0x09090701, 0x01010709, 0xCDCDCDCD, 0x09000000, 0x09090900, 0x02020406, 0xCDCDCDCD
 };
-
-static const unsigned short int __GBADEV_INTERNAL__Verdana_Pal[2] = {
+const unsigned short int GBADev_Verdana_Monochrome_Pal[2] = {
   0x7FFF, 0x2108
 };
 
-static const unsigned char __GBADEV_INTERNAL__Verdana_Glyph_Widths[224] = {
+const unsigned char GBADev_Verdana_Monochrome_Glyph_Widths[224] = {
   0x02, 0x02, 0x04, 0x06, 0x06, 0x08, 0x07, 0x02, 0x04, 0x04, 0x06, 0x06, 0x03, 0x04, 0x03, 0x05,
   0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x03, 0x03, 0x06, 0x06, 0x06, 0x05,
   0x08, 0x07, 0x06, 0x07, 0x07, 0x06, 0x06, 0x07, 0x07, 0x04, 0x04, 0x06, 0x06, 0x08, 0x07, 0x08,
@@ -168,6 +149,33 @@ static const unsigned char __GBADEV_INTERNAL__Verdana_Glyph_Widths[224] = {
   0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x08, 0x05, 0x05, 0x05, 0x05, 0x05, 0x03, 0x02, 0x03, 0x03,
   0x06, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x06, 0x06, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05
 };
+#define GBADev_Verdana_Monochrome_Glyph_Data_Len      896U
+#define GBADev_Verdana_Monochrome_Glyph_Data_Size     3584U
+#define GBADev_Verdana_Monochrome_Glyph_Count         224U
+#define GBADev_Verdana_Monochrome_Glyph_Cell_Width    8U
+#define GBADev_Verdana_Monochrome_Glyph_Cell_Height   16U
+#define GBADev_Verdana_Monochrome_Glyph_Cell_Size     16U
+#define GBADev_Verdana_Monochrome_Glyph_Cell_Pitch    1U
+#define GBADev_Verdana_Monochrome_Glyph_Bpp           1U
+#define GBADev_Verdana_Monochrome_Pal_Color_Count     2U
+#define GBADev_Verdana_Monochrome_BitPack_BigEndian   false
+#define GBADev_Verdana_Monochrome_Glyph_Height        12U
 
-
-#endif  /* _GBADEV_DEFFONT_VERDANA_FONT_PRIV_H_ */
+const TextEngine_Font_t GBADev_Verdana_Monochrome_Font = {
+  .glyph_data = GBADev_Verdana_Monochrome_Glyph_Data,
+  .pal = GBADev_Verdana_Monochrome_Pal,
+  .glyph_widths = GBADev_Verdana_Monochrome_Glyph_Widths,
+  .glyph_heights = ((void*)0),
+  .glyph0_char_code = ' ',
+  .errglyph_idx = '?'-' ',
+  .glyph_count = GBADev_Verdana_Monochrome_Glyph_Count,
+  .pal_color_count = GBADev_Verdana_Monochrome_Pal_Color_Count,
+  .glyph_width = GBADev_Verdana_Monochrome_Glyph_Cell_Width,
+  .glyph_height = GBADev_Verdana_Monochrome_Glyph_Height,
+  .cell_width = GBADev_Verdana_Monochrome_Glyph_Cell_Width,
+  .cell_height = GBADev_Verdana_Monochrome_Glyph_Cell_Height,
+  .cell_size = GBADev_Verdana_Monochrome_Glyph_Cell_Size,
+  .cell_pitch = GBADev_Verdana_Monochrome_Glyph_Cell_Pitch,
+  .bitdepth = GBADev_Verdana_Monochrome_Glyph_Bpp,
+  .bitpack_big_endian = GBADev_Verdana_Monochrome_BitPack_BigEndian
+};

@@ -238,6 +238,11 @@ typedef struct s_obj_attr {
   u16 IGNORE_PAD;
 } ALIGN(4) Obj_Attr_t;
 
+typedef union u_obj_attr {
+  Obj_Attr_t attrs;
+  u64 raw;
+} ALIGN(4) Obj_Attr_u;
+
 typedef struct s_obj_affine_transform {
   u16 IGNORE_PAD0[3], 
       pa, 

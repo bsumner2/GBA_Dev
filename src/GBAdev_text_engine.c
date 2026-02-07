@@ -18,7 +18,113 @@
 #define ANSI_CURSOR_TO_COLUMN     'G'
 #define ANSI_CURSOR_TO_HOME       'H'
 
-
+/*
+ * GBADev Custom Escape Sequences:
+ * Escape Format:
+ *    "\x1c[$<SEQUENCE_0>$<SEQUENCE_1>...$<SEQUENCE_<n-1>>$<SEQUENCE_<n>>]"
+ * Where n>=1
+ * Whitespace within brackets between sequences is accepted
+ * Sequence formats:
+ * Sequence with no args: 
+ *                      "$<sequence id>"
+ * Sequence with args: 
+ *                      "$<sequence id>=arg0,arg1,...arg_<n-1>,arg_<n>" n>=1
+ * Sequence with sub-specifier: 
+ *                      "$<sequence_id><sub-id delimiter><subsequence id>"
+ * Sub-id can be sequence-specific. e.g.:
+ *            "$PAL.<pal index>=<color hexcode>" "$PSTR#<predef string index>"
+ * Some sequences have sub-speicifiers AND args.
+ * Sequences:
+ * $PAL.<palette index in base 10>=<16b color hexcode>
+ *        Set surface palette at given index to given color.
+ *        e.g.: "$PAL.0=0x7FFF" set ctx->surface.pal[0] = 0x7FFF;
+ * $X=<cursor x coordinate in base 10>
+ *        Set text context surface's write cursor to given x coordinate.
+ *        X coordinate is relative to textbox set by surface's margins.
+ * $Y=<cursor y coordinate in base 10>
+ *        Same gist as $X=<x coord in base 10>, but sets y coord instead of x.
+ * $XY=<cursor x coordinate in base 10>,<cursor y coordinate in base 10>
+ *        Same gist as $X=<xcoord base10> and $Y=<...>, only this one sets
+ *        both X and Y coordinate of cursor.
+ * $CLR   
+ *        Clears all render surface area within textbox defined by surface's
+ *        margins.
+ * $RESET
+ *        Reset text engine context (ctx) state.
+ *        Resets ctx's render surface, and resets ctx font to default font, 
+ *        if one is specified via ctx's font_registry. I.E.:
+ *        IF ctx->font_registry NOT NULL -AND- ctx->font_registry_size NOT ZERO
+ *        THEN set ctx->current_font = ctx->font_registry[0]
+ *        ELSE leave ctx->current_font as-is, and then reset surface state by
+ *        doing the following:
+ *        1. Reset surface margins to make textbox span entire surface's
+ *        width and height.
+ *        2. Reset surface's write cursor to home position (i.e.: 
+ *        ctx->surface.cursor = (Coord_t){0,0}).
+ *        3. Reset surface->pal to match ctx->current_font->pal (this is 
+ *        performed only after current_font was either left alone or reset to
+ *        default font (ctx->font_registry[0]) IF AND ONLY IF a default one 
+ *        exists).
+ *        4. If user provided an index remap buffer (surface::idx_map),
+ *        then reset its mappings such that FOR ALL i in idx_map:
+ *        surface.idx_map[i] := i.
+ *        5. If surface render mode is in a 4bpp render mode (16-color mode), 
+ *        then reset surface::cur_palbank such that surface->cur_palbank = 0.
+ * $FG=<16b color hexcode>
+ *        Set ctx->surface.pal[1] = <16b color hexcode>. Basically an alias of
+ *        $PAL.1=<16b color hexcode> 
+ *        (i.e.: $FG=0x7FFF and $PAL.1=0x7FFF are equivalent)
+ * $BG=<16b color hexcode>
+ *        Same gist as $FG=<16b color hexcode>, except it sets 
+ *        ctx->surface.pal[0] instead of ctx->surface.pal[1], and is therefore
+ *        instead an alias of $PAL.0=<16b color hexcode>.
+ * $FONT=<font registry index>
+ *        Set ctx->current_font = ctx->font_registry[<font registry index>]
+ *        iff ctx->font_registry is NOT NULL, and <font registry index> is
+ *        a number within the INTEGER interval, [0, ctx->font_registry_size).
+ * $MARGIN.<margin name>=<coordinate along relevant axis>
+ *        Set given margin to coordinate value along its relevant axis (x or y)
+ *        IF AND ONLY IF coordinate fits within its relevant dimension 
+ *        interval:
+ *            Lower Margin Interval: 
+ *                              [0, <relevant upper margin>)
+ *            Upper Margin Interval: 
+ *                              (<relevant lower margin>, surface.relevant_dim]
+ *        Margin names: LEFT, TOP, RIGHT, BOTTOM, where:
+ *            LEFT:   x axis lower margin within interval [0, RIGHT)
+ *            RIGHT:  x axis upper margin within interval (LEFT, surface.width]
+ *            TOP:    y axis lower margin within interval [0, BOTTOM)
+ *            BOTTOM: y axis upper margin within interval (TOP, surface.height]
+ *        Example: $MARGIN.LEFT=0
+ * $MARGIN=<left coord>,<top coord>,<right coord>,<bottom coord>
+ *        Same gist as $MARGIN.<margin name>=<coord>, only this sequence
+ *        sets all 4 margins, and must always specify 4 coordinates (one for 
+ *        each margin). Still follows same rules about bounds as shown above.
+ * $PSTR#<predefined string index>
+ *        Print the predefined string found within ctx->predef_string_table
+ *        at index <predefined string index> 
+ *        (i.e.: ctx->predef_string_table[<predefined string index>]) IFF
+ *        ctx->predef_string_table != NULL, ctx->predef_string_table_size != 0,
+ *        and <predefined string index> within interval of:
+ *        [0, ctx->predef_string_table_size).
+ * $BANK=<palbank index>
+ *        Regardless of whether you're in 4bpp (16-index color mode),
+ *        set surface->cur_palbank = <palbank index> modulo 16. It will not
+ *        cause a failure state if run outside of 4bpp text render mode, but
+ *        this sequence is still only relevant for 4bpp color modes.
+ * $IMAP.<font glyph pixmap index>=<surface palette index>
+ *        Remap a given glyph pixmap pixel color index to the provided
+ *        surface palette color index IFF user provided an index remap buffer
+ *        (i.e.: surface.idx_map != NULL). This is useful for scenarios where:
+ *        say you have a 1bpp font, but you want to be able to use multi-color
+ *        text. You can do IMAP.0=3 so that any future glyphs rendered will be
+ *        rendered such that glyph background pixels, aka glyph pixels that,
+ *        are of index 0 
+ *        (i.e.: Get_Glyph_Pixel_At(glyph_info, x, y)) returns ZERO),
+ *        are rendered with color surface->pal[3] instead of surface->pal[0].
+ *        There are plenty of other great uses for this, but this was just one
+ *        example to illustrate its utility!
+ * */
 typedef enum e_txt_engine_gbadev_esc_seqs {
   TEXT_ENGINE_GBADEV_ESCAPE_INVALID                 =0x80000000UL,
   TEXT_ENGINE_GBADEV_ESCAPE_TYPE_SET_PAL            =0x00000001UL,
@@ -839,8 +945,16 @@ BOOL __GBADEV_INTERNAL__TextEngine_GBADevEscapes_ParseULong(u32 *dst,
   }
   if (10==base) {
     c = *str++;
-    if ('0'==c || !isdigit(c))
+    if (!isdigit(c))
       return FALSE;
+    if ('0'==c) {
+      for (c=*str; isdigit(c); c=*++str)
+        if ('0'!=c)
+          return FALSE;
+      *dst = 0UL;
+      *iostr = str;
+      return TRUE;
+    }
     dstlocal = c&15;
     for (c=*str; isdigit(c); c=*++str) {
       dstlocal *= 10;
@@ -981,13 +1095,13 @@ BOOL __GBADEV_INTERNAL__TextEngine_GBADevEscapes_PrintPresetString(
                                                          const char **iostr) {
   const char *str = *iostr;
   u32 idx;
-  if (NULL==ctx->predef_string_table || 0UL == ctx->prdef_string_table_size)
+  if (NULL==ctx->predef_string_table || 0UL == ctx->predef_string_table_size)
     return FALSE;
   ADVANCE_PAST_WHITESPACE(str);
   if (!__GBADEV_INTERNAL__TextEngine_GBADevEscapes_ParseULong(&idx, &str, 10))
     return FALSE;
   ADVANCE_PAST_WHITESPACE(str);
-  if (ctx->prdef_string_table_size <= idx) {
+  if (ctx->predef_string_table_size <= idx) {
     return FALSE;
   }
   if (NULL == ctx->predef_string_table[idx])
@@ -1100,7 +1214,7 @@ BOOL __GBADEV_INTERNAL__TextEngine_GBADevEscape_SetCursor(
     *iostr = str;
     return TRUE;
   }
-  if (','!=*str)
+  if (','!=*str++)
     return FALSE;
 
 
@@ -1141,7 +1255,7 @@ BOOL __GBADEV_INTERNAL__TextEngine_GBADevEscapes_SetFGBG(
   const char *str = *iostr;
   u32 clr;
   ADVANCE_PAST_WHITESPACE(str);
-  if (!__GBADEV_INTERNAL__TextEngine_GBADevEscapes_ParseULong(&clr, &str, 10))
+  if (!__GBADEV_INTERNAL__TextEngine_GBADevEscapes_ParseULong(&clr, &str, 16))
     return FALSE;
   ADVANCE_PAST_WHITESPACE(str);
   if (clr!=(0xFFFF&clr))
@@ -1236,7 +1350,7 @@ BOOL __GBADEV_INTERNAL__TextEngine_GBADevEscape_MoveCursor(
     return FALSE;
   ADVANCE_PAST_WHITESPACE(str);
   x |= (arg&0x7FFF);
-  if (','!=*str)
+  if (','!=*str++)
     return FALSE;
   ADVANCE_PAST_WHITESPACE(str);
   if ('-' == *str) {
