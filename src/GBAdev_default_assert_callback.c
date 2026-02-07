@@ -35,7 +35,7 @@ void __assert_func (const char *file,
   TextEngine_Putchar('#', &ctx);
   TextEngine_Puts(caller, &ctx);
   TextEngine_Printf(&ctx, ":%d", line);
-  TextEngine_Puts("%s#%s:%d\x1b[37;40m, has failed!", &ctx);
+  TextEngine_Puts(", has failed!", &ctx);
   
   if (0==REG_IME) {
     REG_IE |= IRQ_FLAG(VBLANK);
