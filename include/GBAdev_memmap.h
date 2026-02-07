@@ -138,7 +138,6 @@ extern "C" {
 
 
 #define OAM_ATTR                  ((Obj_Attr_u*) (MEM_OAM))
-#define OAM_ATTR_RAW              ((u64*) (MEM_OAM))
 #define OAM_AFFINE                ((Obj_Affine_Transform_t*) (MEM_OAM))
 
 
